@@ -1,0 +1,119 @@
+;
+; funk screen macros
+; by Robert Kuhfss
+;
+
+;============================================
+;	> defines
+;============================================
+#define white 0
+#define black 255
+
+
+;============================================
+;	> short
+;============================================
+#define update	#define funk_update_usage \ call funk_update
+#define clear	#define funk_clear_usage \ call funk_clear
+#define invert	#define funk_invert_usage \ call funk_invert
+
+#define center(width) (96-(width))/2
+
+
+;============================================
+;	> sprite (draw auto sprite)
+;============================================
+; sprite DOWN, RIGHT, LABEL
+#macro _funk_autoSprite(_sprite_down, _sprite_right, _sprite_data)
+	#define funk_autoSprite_usage
+	#ifdef _sprite_data
+		ld	hl, _sprite_data
+		ld	de, 256 * _sprite_down + _sprite_right
+	#endif
+	call	funk_autoSprite
+#endmacro
+; #define sprite _funk_autoSprite(
+#define spr _funk_autoSprite(
+#define gfx	_funk_autoSprite(
+
+
+;============================================
+;	> putS (draw small sprite)
+;============================================
+; putS DOWN, RIGHT, SIZE, LABEL
+#macro _funk_smallSprite(_small_down, _small_right, _small_size, _small_address)
+	#define funk_smallSprite_usage
+	#ifdef _small_address
+		ld	hl, _small_address
+		ld	de, 256 * _small_down + _small_right
+		ld	b, _small_size
+	#endif
+	call	funk_smallSprite
+#endmacro
+#define sprS _funk_smallSprite(
+#define gfxS _funk_smallSprite(
+
+
+;============================================
+;	> gfxL (draw large sprite)
+;============================================
+; gfxL DOWN, RIGHT, SIZE_DOWN, SIZE_RIGHT_B, LABEL
+#macro _funk_largeSprite(_large_down, _large_right, _large_size_down, _large_size_right, _large_address)
+	#define funk_largeSprite_usage
+	#ifdef _large_address
+		ld	hl, _large_address
+		ld	de,  256 * _large_down + _large_right
+		ld	bc,  256 * _large_size_down + _large_size_right
+	#endif
+	call	funk_largeSprite
+#endmacro
+#define sprL _funk_largeSprite(
+#define gfxL _funk_largeSprite(
+
+
+;============================================
+;	> rect (draw rectangle)
+;============================================
+; rect DOWN, RIGHT, HEIGHT, LENGTH
+#macro _funk_rectangle(_rect_down, _rect_right, _rect_height, _rect_length)
+	#define funk_rectangle_usage
+	#ifdef _rect_length
+		ld	l, _rect_down
+		ld	a, _rect_right
+		ld	bc, 256 * _rect_height + _rect_length
+	#endif
+	call	funk_rectangle
+#endmacro
+#define rect _funk_rectangle(
+
+
+;============================================
+;	> line
+;============================================
+#macro _funk_line(_line_down, _line_color)
+	#ifndef _line_color
+		#define _line_color black
+	#endif
+	ld	hl,	gbuf + (_line_down * 12)
+	ld	(hl),	_line_color
+	ld	de,	gbuf + (_line_down * 12) + 1
+	ld	bc,	12 - 1
+	ldir
+#endmacro
+#define line _funk_line(
+
+
+;============================================
+;	> block (draw black block)
+;============================================
+#macro _funk_block(_block_down, _block_height, _block_color)
+	#ifndef _block_color
+		#define _block_color black
+	#endif
+	ld	hl,	gbuf + (_block_down * 12)
+	ld	(hl),	_block_color
+	ld	de,	gbuf + (_block_down * 12) + 1
+	ld	bc,	(_block_height * 12) - 1
+	ldir
+#endmacro
+#define block _funk_block(

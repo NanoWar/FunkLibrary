@@ -1,0 +1,185 @@
+#ifndef funk_functions_screen2_included
+#define funk_functions_screen2_included
+;
+; funk screen functions
+; by Robert Kuhfss
+;
+
+;============================================
+; SPRITE
+;============================================
+; Automagically draws any-size sprites
+;--------------------------------------------
+;input:	HL = pointer to data
+;		D = y position (down)
+;		E = x position (right)
+;sprite data layout:
+; .db WIDTH (pixels), HEIGHT (pixels)
+; .dw SPRITE
+;--------------------------------------------
+#ifdef funk_autoSprite_usage
+#ifndef funk_autosprite_copyram
+funk_autoSprite
+#endif
+;--------------------------------------------
+funk_autoSprite.code
+	ld	a, (HL)
+	; round up, div by 8
+	add	a, 7
+	sra	a
+	sra	a
+	sra	a
+	ld	c, a
+	inc	HL
+	ld	b, (HL)
+	inc	HL
+	cp	1 ; one byte width?
+	jp	z, funk_smallSprite.code
+	;
+.debug "Included 'funk_autoSprite' (", $ - funk_autoSprite.code, " bytes)"
+#define funk_largeSprite_usage
+#define funk_smallSprite_usage
+#endif
+	;
+;============================================
+; PUTL
+;============================================
+; Draws a large cxb sprite on the gbuf
+;--------------------------------------------
+;input:	hl = pointer to sprite data
+;		d = y position (down)
+;		e = x position (right)
+;		b = height in pixels
+;		c = width in bytes
+;output:	sprite drawn on gbuf (xor)
+;--------------------------------------------
+#ifdef funk_largeSprite_usage
+#ifndef funk_largeSprite_copyram
+funk_largeSprite
+#endif
+;--------------------------------------------
+funk_largeSprite.code
+	push	hl
+	pop	ix
+	ld	l, d
+	ld	a, e
+funk_largeSprite.old
+	ld	h, 0
+	ld	d, h
+	ld	e, l
+	add	hl, de
+	add	hl, de
+	add	hl, hl
+	add	hl, hl
+	ld	e, a
+	srl	e
+	srl	e
+	srl	e
+	add	hl, de
+	ld	de, gbuf
+	add	hl, de
+	and	7
+	ld	e, a
+funk_largeSprite.loop1
+	push	bc
+	push	hl
+	ld	b, c
+funk_largeSprite.loop2
+	ld	c, (ix)
+	ld	d, 0
+	inc	ix
+	ld	a, e
+	or	a
+	jr	z, funk_largeSprite.skip
+funk_largeSprite.loop3
+	srl	c
+	rr	d
+	dec	a
+	jr	nz, funk_largeSprite.loop3
+funk_largeSprite.skip
+	ld	a, c
+	xor	(hl)
+	ld	(hl), a
+	inc	hl
+	ld	a, d
+	xor	(hl)
+	ld	(hl), a
+	djnz	funk_largeSprite.loop2
+	pop	hl
+	ld	c, 12
+	add	hl, bc
+	pop	bc
+	djnz	funk_largeSprite.loop1
+	ret
+;--------------------------------------------
+.debug "Included 'funk_largeSprite' (", $ - funk_largeSprite.code, " bytes)"
+#endif
+
+
+;============================================
+; PUTS
+;============================================
+; Draws a small 8xb sprite on the gbuf
+;--------------------------------------------
+;input:	hl = pointer to sprite data
+;		d = y position (down)
+;		e = x position (right)
+;		b = size of sprite
+;--------------------------------------------
+#ifdef funk_smallSprite_usage
+#ifndef funk_smallSprite_copyram
+funk_smallSprite
+#endif
+;--------------------------------------------
+funk_smallSprite.code
+	push	hl
+	pop	ix
+	ld	l, d
+	ld	a, e
+funk_smallSprite.old
+	ld	e, l
+	ld	h, 0
+	ld	d, h
+	add	hl, de
+	add	hl, de
+	add	hl, hl
+	add	hl, hl
+	ld	e, a
+	and	7
+	ld	c, a
+	srl	e
+	srl	e
+	srl	e
+	add	hl, de
+	ld	de, gbuf
+	add	hl, de
+funk_smallSprite.loop1
+	ld	d, (ix)
+	ld	e, 0
+	ld	a, c
+	or	a
+	jr	z, funk_smallSprite.skip
+funk_smallSprite.loop2
+	srl	d
+	rr	e
+	dec	a
+	jr	nz, funk_smallSprite.loop2
+funk_smallSprite.skip
+	ld	a, (hl)
+	xor	d
+	ld	(hl), a
+	inc	hl
+	ld	a, (hl)
+	xor	e
+	ld	(hl), a
+	ld	de, 11
+	add	hl, de
+	inc	ix
+	djnz	funk_smallSprite.loop1
+	ret
+;--------------------------------------------
+.debug "Included 'funk_smallSprite' (", $ - funk_smallSprite.code, " bytes)"
+#endif
+
+
+#endif ; funk_functions_screen2_included

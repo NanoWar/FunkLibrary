@@ -1,0 +1,200 @@
+;
+; App macros
+;
+
+#if funk_type = app
+
+#macro .nextpage
+	#define funk_setupRamCalls
+	.include_once_funkfunctions
+	.include_once_funksetup
+	#ifndef FUNK_DATA_ON_LAST_PAGE
+ 		.include_funkdata
+ 	#endif
+	_funk_defpage(app_page+1)
+#endmacro
+
+
+#macro .pageinfo
+	.info "App page ", app_page+1, " size: ", ($ & $0000FFFF) - $4000, " bytes (free: ", $8000 - ($ & $0000FFFF), " bytes)"
+	;.echo "# Page ", app_page+1, " free space: ", $8000 - ($ & $0000FFFF), " bytes"
+#endmacro
+
+
+#define page(_page_address) (_page_address & $FFFF0000 >> 16 + 1)
+
+;============================================
+;	> funk paged call
+;============================================
+#macro _funk_page2Call_(_page2call_label)
+	#define funk_page2call_usage
+	ld	ix, _page2call_label
+	call	funk_page2call
+#endmacro
+
+#macro delayed_insertPageOffset(_dipo_label, _dipo_address)
+	#define _dipo_label concat("\"", _dipo_label, "\"")
+	.setup_funkdelayed
+	.echo >> _funk_delayed.z80 "_ .seek ", _dipo_address, " \\ .db page(", _dipo_label, ")-page(", $, ") \\ .seek -_\n"
+#endmacro
+
+#macro _funk_pagedCall2(_pagedCall_label, _pagedCall_page, _pagedCall_indicator)
+	push	bc \	push	hl
+	#ifdef _pagedCall_page
+		#ifdef _pagedCall_indicator
+			delayed_insertPageOffset(_pagedCall_indicator, $+1)
+		#endif
+		ld	b, _pagedCall_page
+	#else
+		delayed_insertPageOffset(_pagedCall_label, $+1)
+		ld	b, 0 ; insert here
+	#endif
+	ld	hl, _pagedCall_label
+	#define funk_pagedCall_usage
+	call	funk_pagedCall
+#endmacro
+
+#macro _funk_pagedCall(_pagedCall_label, _pagedCall_indicator)
+	#define funk_pagedCall_usage
+	call	funk_pagedCall
+	.dw _pagedCall_label
+	#ifdef _pagedCall_indicator
+		#if _pagedCall_indicator < 255
+			; indicator is page number
+			#if _pagedCall_indicator = page($)
+				.warn "Page call is on same page"
+			#endif
+			.db _pagedCall_indicator - page($)
+		#else
+			; indicator is an address (or forward label error)
+			#if page(_pagedCall_indicator) = page($)
+				.warn "Page call is on same page"
+			#endif
+			.db page(_pagedCall_indicator) - page($)
+		#endif
+	#else
+		#if page(_pagedCall_label) = page($)
+			.warn "Page call label ", _pagedCall_label, " is on same page"
+		#endif
+		.db page(_pagedCall_label) - page($)
+	#endif
+#endmacro
+#define pcall _funk_pagedCall(
+
+
+;============================================
+;	> OMG tis is the shizzle!!!
+;============================================
+#macro _funk_setupRam(_setupRam_name)
+	.echo > _temp.z80 _setupRam_name, ".copy\n"
+	.echo >> _temp.z80 ".var \"", _setupRam_name, "\", ", _setupRam_name, ".end - ", _setupRam_name, ".begin\n"
+	.echo >> _temp.z80 ".funkSetup \"", _setupRam_name, ".copy\"\n"
+	.echo >> _temp.z80 " ld hl, ", _setupRam_name, ".begin\n"
+	.echo >> _temp.z80 " ld de, ", _setupRam_name, "\n"
+	.echo >> _temp.z80 " ld bc, ", _setupRam_name, ".end - ", _setupRam_name, ".begin\n"
+	.echo >> _temp.z80 "#define ", _setupRam_name, "_copyram"
+	#include _temp.z80
+	ldir ; copy routine to ram
+	ret
+	.debug "Added copy routine for '", _setupRam_name, "'"
+#endmacro
+#define .funkSetupRam _funk_setupRam(
+#define .setupram _funk_setupRam(
+
+;============================================
+;	> page validation
+;============================================
+#macro .validate
+	;.echo "# Code size: ", $ - start, " bytes"
+	#if ($ & $0000FFFF) > $8000
+		.err "Page ", app_page+1, " went over bounds by ", $ - $8000, " bytes."
+	#else
+		.pageinfo
+		#define free_space eval(free_space + $8000 - ($ & $0000FFFF))
+		#if app_page > 0
+			.info "In ", app_page+1, " pages, ", free_space," bytes are available."
+		#endif
+	#endif
+#endmacro
+
+;============================================
+;	> defpage
+;============================================
+#macro _funk_defpage(_defpage_page, _defpage_appname)
+	#if _defpage_page = 0
+		#ifndef app_page
+			#define free_space 0
+			#define app_page 0
+			#ifndef _defpage_appname
+				.warn "No name given, using \"DEFAULT\""
+				#define _defpage_appname "DEFAULT"
+			#endif
+			.org $4000
+			.db $80, $0F, 0, 0, 0, 0
+			.db $80, $12, 1, 4
+			.db $80, $21, 1
+			.db $80, $31, 1
+			.db $80, $48
+_           	.db _defpage_appname
+			#define _appnamelength eval($ - -_)
+			#if _appnamelength <= 8
+				.fill 8 - _appnamelength, ' '
+			#else
+				.err "App name is ", _appnamelength - 8, " character(s) too long."
+			#endif
+			#undef _appnamelength
+			.db $80,$81,0
+			.db $80,$90
+			.db $03,$26,$09,$04,$04,$06f,$1b,$80
+			.db $02,$0d,$40
+			.db $a1,$6b,$99,$f6,$59,$bc,$67 
+			.db $f5,$85,$9c,$09,$6c,$0f,$b4,$03,$9b,$c9 
+			.db $03,$32,$2c,$e0,$03,$20,$e3,$2c,$f4,$2d 
+			.db $73,$b4,$27,$c4,$a0,$72,$54,$b9,$ea,$7c 
+			.db $3b,$aa,$16,$f6,$77,$83,$7a,$ee,$1a,$d4 
+			.db $42,$4c,$6b,$8b,$13,$1f,$bb,$93,$8b,$fc
+			.db $19,$1c,$3c,$ec,$4d,$e5,$75 
+			.db $80,$7F,0,0,0,0
+			.dw 0,0,0,0,0,0,0,0
+		#else
+			.err "There was already a page 0."
+		#endif
+	#else
+		#if ($ & $0000FFFF) > $8000
+			.err "Page ",app_page," went over bounds by ",$-$8000," bytes."
+		#endif
+		#if _defpage_page <= app_page
+			.err "Your page numbers must increase."
+		#endif
+		#define _next_page eval(app_page + 1)
+		#if _defpage_page > _next_page
+			.warn "Skipping page ", _next_page, " at user request."
+		#endif
+		#define free_space eval(free_space + $8000-($ & $0000FFFF))
+		.pageinfo
+		#define _block eval($8000 - ($ & $0000FFFF) + ((_defpage_page - _next_page) * $4000)) ; TEH FIX
+		.block _block
+		#define app_page eval(_defpage_page)
+		#undef _next_page
+		.org $4000+(app_page*$10000)
+	#endif
+#endmacro
+#define .defpage _funk_defpage(
+
+
+#else
+
+;
+; Ignore errors if not an app
+;
+
+#macro .nextpage
+#endmacro
+
+#macro _funk_pagedCall(_pagedCall_label)
+	call _pagedCall_label
+#endmacro
+#define pcall _funk_pagedCall(
+
+
+#endif

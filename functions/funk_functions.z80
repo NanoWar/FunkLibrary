@@ -1,0 +1,15 @@
+.nolist
+;
+; funk functions include file
+; by Robert Kuhfss
+;
+
+
+.funkinclude "functions/funk_functions_app.z80"
+.funkinclude "functions/funk_functions_misc.z80"
+.funkinclude "functions/funk_functions_text.z80"
+.funkinclude "functions/funk_functions_screen.z80"
+.funkinclude "functions/funk_functions_ram.z80"
+
+
+.list

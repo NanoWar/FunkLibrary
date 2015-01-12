@@ -1,0 +1,966 @@
+; =============================================
+;    Binary data Exchange Link Library (Bell)
+;               v0.1  By Timendus
+; Based on the CLAP - http://clap.timendus.com/
+; =============================================
+;  (Modded by NanoWar for use in FunkLibrary)
+;
+;
+; 	/==========\
+; 	| SETTINGS |
+; 	\==========/
+; 
+; ----------------------------
+; == Program identification ==
+; ----------------------------
+;
+; This string is used to identify your program to
+; the other calculator when it tries to connect.
+; If the strings on both calculators don't match,
+; an error will be generated.
+;
+; CHANGE THIS TO YOUR PROGRAM/GAME NAME!
+;
+;bell_progId: .db "BELL",0
+bell_progId = funk_name
+;
+;
+; -----------------------------
+; == Functionality selection ==
+; -----------------------------
+;
+; BELL has several datatransfer schemes,
+; (un)comment the ones you wish to use in your
+; software here. Sending and receiving of bytes,
+; as well as setting up the connection, is always
+; included.
+;
+
+; If commented only send/receive routines are included, no swap routines
+; (if you want to use swap routines, you'll need to call bell_connect first)
+; #define bell_dataSwap
+
+; Include data block transfer routines (<256 bytes)
+; #define bell_dataBlock
+
+; Include large data block transfer routines (>255 bytes)
+; #define bell_largeBlock
+
+; Include String transfer routines
+; #define bell_strings   
+;
+;
+; ---------------------
+; == Timeout setting ==
+; ---------------------
+;
+; Value between 0 and 65535
+; Increase this value if you get unneccessary
+; connection errors in your software. Decrease it
+; to get faster connection loss detection.
+;
+bell_timeout = 65000
+;
+; You can disable timeouts for testing purposes
+; by uncommenting the following line:
+;
+;#define bell_disableTimeout
+;
+;
+; -------------------------------------
+; == Location to store calculator id ==
+; -------------------------------------
+;
+; Use the second option to define a location in
+; saferam if program writeback is not available.
+;
+;bell_calcId: .db 0
+;bell_calcId = saferam1
+; bell_connect_errorflag: .db 0
+.var bell_calcId
+.var bell_connect_errorflag
+
+;
+;
+;
+; 	/==========\
+; 	| ROUTINES |
+; 	\==========/
+;
+; -----------------------------
+; == Setting up a connection ==
+; -----------------------------
+;
+;   - bell_connect
+;
+; ------------------
+; == Sending data ==
+;-------------------
+;
+;   - bell_sendByte
+;   - bell_sendString
+;   - bell_sendBlock
+;   - bell_sendLargeBlock
+;
+; --------------------
+; == Receiving data ==
+; --------------------
+;
+;   - bell_recvByte
+;   - bell_recvString
+;   - bell_recvBlock
+;   - bell_recvLargeBlock
+;
+; -------------------
+; == Swapping data ==
+; -------------------
+;
+;   - bell_swapByte
+;
+
+_BellBegin:
+
+
+
+
+
+; ===============================
+; Select proper hardware settings
+; ===============================
+
+#ifdef platform
+	#if platform == ti8x
+		#define TI83P
+	#else
+		#if platform == ti83
+			#define TI83
+		#else
+			#if platform == ti82
+				#define TI82
+			#endif
+		#endif
+	#endif
+#endif
+
+; #ifdef TI83P
+#if funk_calcmodel = ti83p
+; 	.echo "BELL: Selected hardware: Ti-83+\n"
+
+	readtipbit = 0
+	readringbit = 1
+   
+	writebasevalue = 0
+	writetipbit = 0
+	writeringbit = 1
+#endif
+
+; #ifdef TI83
+#if funk_calcmodel = ti83
+; 	.echo "BELL: Selected hardware: Ti-83\n"
+
+	readtipbit = 2
+	readringbit = 3
+   
+	writebasevalue = $D0
+	writetipbit = 0
+	writeringbit = 1
+#endif
+
+; #ifdef TI82
+#if funk_calcmodel = ti82
+; 	.echo "BELL: Selected hardware: Ti-82\n"
+	
+	readtipbit = 0
+	readringbit = 1
+	
+	writebasevalue = $C0
+	writetipbit = 2
+	writeringbit = 3
+#endif
+
+; #ifndef platform
+; #ifndef TI83P
+; #ifndef TI83
+; #ifndef TI82
+; 	.echo "BELL: You appear not to have selected any target platform\n"
+; 	.echo "      Bell needs to know which calculator to compile for!\n"
+; #endif
+; #endif
+; #endif
+; #endif
+
+
+
+
+
+
+; =====================
+; Reading from the port
+; =====================
+
+; Read the state of the lines, model independant
+; Returns value in a representing the state;
+;    0   Both lines are high
+;    1   Tip is low, ring is high
+;    2   Ring is low, tip is high
+;    3   Both lines are low
+	
+#define readLines() call _bell_readLines
+
+_bell_readLines:
+
+	ld b,0
+	in a,(0)
+	bit readtipbit,a
+	jp nz,_bell_readLines_tipNotLow
+	; Tip is low, so set bit 0
+	ld b,1
+_bell_readLines_tipNotLow:
+	bit readringbit,a
+	jp nz,_bell_readLines_ringNotLow
+	; Ring is low, so set bit 1
+	set 1,b
+_bell_readLines_ringNotLow
+	ld a,b
+	ret
+
+
+; Read the state of the tip
+; Returns state in z flag;
+;     z    Tip is low
+;     nz   Tip is high
+
+#define readTip() in a,(0) \ bit readtipbit,a
+
+
+; Read the state of the ring
+; Returns state in z flag;
+;     z    Ring is low
+;     nz   Ring is high
+
+#define readRing() in a,(0) \ bit readringbit,a
+
+
+
+
+
+
+; ===================
+; Writing to the port
+; ===================
+
+; Set both lines high (+5 volt, default setting)
+#define setHighHigh()   ld a,writebasevalue \ out (0),a
+
+
+; Pull both lines low (0 volt)
+#define setLowLow()     ld a,writebasevalue|(1<<writetipbit)|(1<<writeringbit) \ out (0),a
+
+
+; Pull the tip low, leave the ring high
+#define setLowHigh()    ld a,writebasevalue|(1<<writetipbit) \ out (0),a
+
+
+; Pull the ring low, leave the tip high
+#define setHighLow()    ld a,writebasevalue|(1<<writeringbit) \ out (0),a
+
+
+
+
+
+
+; =================
+; Transfering bytes
+; =================
+
+; Send a byte through the link port
+; Expects value to send in a
+; Returns nz on timeout, z on proper transfer
+
+bell_sendByte:
+	; Store byte data
+	ld d,a
+	; Reset link port just to be sure
+	setHighHigh()
+	; Create bitmask
+	ld e,1
+	ld a,d
+
+_bell_sendByte_loop:
+	; Get current bit in z flag
+	and e
+	jp z,_bell_sendByte_zeroBit
+
+_bell_sendByte_oneBit:
+	setHighLow()
+	; Wait untill other calculator pulls
+	; other line low or time out
+	ld bc,bell_timeout
+_bell_sendByte_oneBit_loop
+	; Read line
+	readTip()
+	; It's down
+	jp z,_bell_sendByte_oneBit_waitRelease
+	; It's not down yet
+#ifndef bell_disableTimeout
+	dec bc
+#endif
+	ld a,b
+	or c
+	jp nz,_bell_sendByte_oneBit_loop
+	; We've timed out :(
+	jp _bell_timeout
+_bell_sendByte_oneBit_waitRelease:
+	; The tip went down, now release the ring
+	setHighHigh()
+	ld bc,bell_timeout
+_bell_sendByte_oneBit_waitRelease_loop:
+	; Read line
+	readTip()
+	; It's high
+	jp nz,_bell_sendByte_nextBit
+	; It's not high yet
+#ifndef bell_disableTimeout
+	dec bc
+#endif
+	ld a,b
+	or c
+	jp nz,_bell_sendByte_oneBit_waitRelease_loop
+	; We've timed out :(
+	jp _bell_timeout
+
+_bell_sendByte_zeroBit:
+	setLowHigh()
+	; Wait untill other calculator pulls
+	; other line low or time out
+	ld bc,bell_timeout
+_bell_sendByte_zeroBit_loop
+	; Read line
+	readRing()
+	; It's down
+	jp z,_bell_sendByte_zeroBit_waitRelease
+	; It's not down yet
+#ifndef bell_disableTimeout
+	dec bc
+#endif
+	ld a,b
+	or c
+	jp nz,_bell_sendByte_zeroBit_loop
+	; We've timed out :(
+	jp _bell_timeout
+_bell_sendByte_zeroBit_waitRelease:
+	; The ring went down, now release the tip
+	setHighHigh()
+	ld bc,bell_timeout
+_bell_sendByte_zeroBit_waitRelease_loop:
+	; Read line
+	readRing()
+	; It's high
+	jp nz,_bell_sendByte_nextBit
+	; It's not high yet
+#ifndef bell_disableTimeout
+	dec bc
+#endif
+	ld a,b
+	or c
+	jp nz,_bell_sendByte_zeroBit_waitRelease_loop
+	; We've timed out :(
+	jp _bell_timeout
+	
+_bell_sendByte_nextBit:
+	; Rotate mask
+	rl e
+	; Are we done yet?
+	; (mask is rotated in carry and byte is empty)
+	ret z
+	; Retrieve byte
+	ld a,d
+	; Resume
+	jp _bell_sendByte_loop
+
+_bell_timeout:
+	setHighHigh()
+	; Reset z flag
+	xor a
+	inc a
+	ret
+
+
+
+; Wait for a byte from the link port
+; Returns nz on timeout, z and value in a on proper transfer
+
+bell_recvByte:
+	; Reset lines to make sure we're reading the right thing
+	setHighHigh()
+	; Wait untill a line goes low or we get a timeout
+	ld bc,bell_timeout
+	; Create bitmask
+	ld e,1
+	; This is our byte
+	ld d,0
+_bell_recvByte_wait:
+	push bc
+	; Check the data lines
+	readLines()
+	pop bc
+	bit 0,a
+	jp nz,_bell_recvByte_tipLow
+	bit 1,a
+	jp nz,_bell_recvByte_ringLow
+#ifndef bell_disableTimeout
+	dec bc
+#endif
+	ld a,b
+	or c
+	jp nz,_bell_recvByte_wait
+	; We've timed out :(
+	jp _bell_timeout
+
+_bell_recvByte_ringLow:
+	; Give ack for this bit by pulling low tip
+	setLowHigh()
+	; Bit is one
+	; Or byte with mask to set this bit
+	ld a,d
+	or e
+	ld d,a
+	; Wait for sender to release the ring
+	ld bc,bell_timeout
+_bell_recvByte_ringLow_wait:
+	; Read line
+	readRing()
+	; Jump to next bit if it's released
+	jp nz,_bell_recvByte_nextBit
+#ifndef bell_disableTimeout
+	dec bc
+#endif
+	ld a,b
+	or c
+	jp nz,_bell_recvByte_ringLow_wait
+	; We've timed out :(
+	jp _bell_timeout
+
+_bell_recvByte_tipLow:
+	; Give ack for this bit by pulling low ring
+	setHighLow()
+	; Bit is zero
+	; Wait for sender to release the tip
+	ld bc,bell_timeout
+_bell_recvByte_tipLow_wait:
+	; Read line
+	readTip()
+	; Jump to next bit if it's released
+	jp nz,_bell_recvByte_nextBit
+#ifndef bell_disableTimeout
+	dec bc
+#endif
+	ld a,b
+	or c
+	jp nz,_bell_recvByte_tipLow_wait
+	; We've timed out :(
+	jp _bell_timeout
+
+_bell_recvByte_nextBit:
+	; Set lines back high
+	setHighHigh()
+	; Get byte in case we're done
+	ld a,d
+	; Rotate bitmask
+	rl e
+	; Are we done yet?
+	; (bit rotates into carry flag, leaving byte zero)
+	ret z
+	ld bc,bell_timeout
+	jp _bell_recvByte_wait
+
+
+
+#ifdef bell_dataSwap
+
+; Swap a byte between calculators
+; Expects value to send in a
+; Returns nz on timeout, z and value in a on proper swap
+
+bell_swapByte:
+	; Store data to be sent
+	push af
+	; Should we send first or receive first?
+	ld a,(bell_calcId)
+	or a
+	jp z,_bell_sendFirst
+
+_bell_recvFirst:
+	; Receive data
+	call bell_recvByte
+	; Store the received byte
+	ld b,a
+	; Get the byte to send without destroying the flags
+	pop de
+	ld a,d
+	; Exit on receive error
+	ret nz
+	; Store the received byte even safer
+	push bc
+	; Send data
+	call bell_sendByte
+	; Retrieve the stored data
+	pop af
+	ret
+
+_bell_sendFirst:
+	; Get the byte to send
+	pop af
+	; Send data
+	call bell_sendByte
+	; Exit on send error
+	ret nz
+	; Receive data
+	call bell_recvByte
+	ret
+	
+#endif
+
+
+
+
+
+
+
+; ======================
+; Connecting calculators
+; ======================
+
+; Wait for an opponent and check program compatibility.
+; Sets calcId and returns nz if connection failed or 
+; z if connection established.
+
+bell_connect:
+	di
+	xor a
+	ld (bell_connect_errorflag),a
+	; Synchronize (wait for other calc)
+	call bell_sync
+	ret nz
+	; Store my address
+	ld hl,bell_calcId
+	ld (hl),a
+	; Swap program id string
+	or a
+	jr z,_bell_connect_recvFirst
+
+_bell_connect_sendFirst:
+	; Send my program id
+	call _bell_connect_send
+	; Receive other's program id
+	call _bell_connect_recv
+	ld a,(bell_connect_errorflag)
+	bit 0,a
+	ret
+
+_bell_connect_recvFirst:
+	; Get other's program id
+	call _bell_connect_recv
+	; If it's wrong, we still have to send our ID
+	; Send my program id
+	call _bell_connect_send
+	ld a,(bell_connect_errorflag)
+	bit 0,a
+	ret
+	
+_bell_connect_send:
+	ld hl,bell_progId
+_bell_connect_sendLoop:
+	; Send character of program id
+	ld a,(hl)
+	call bell_sendByte			; does hl stay intact?
+	; Pass through send errors
+	ret nz
+	; Was our character zero?
+	ld a,(hl)
+	or a
+	; Nope, keep looping
+	inc hl
+	jp nz,_bell_connect_sendLoop
+	; Yep; we're done
+	ret
+
+_bell_connect_recv:
+	ld hl,bell_progId
+_bell_connect_recvLoop:
+	; Get a character from the other calc
+	call bell_recvByte			; does hl stay intact?
+	; Pass through receive errors
+	ret nz
+	; Compare it to our character
+	ld b,(hl)
+	cp b
+	; If they're not the same, flag
+	jp z,_bell_connect_recvSkip
+	push af
+	ld a,1
+	ld (bell_connect_errorflag),a
+	pop af
+_bell_connect_recvSkip:
+	; Otherwise, was it a zero?
+	or a
+	; Nope, keep looping
+	inc hl
+	jp nz,_bell_connect_recvLoop
+	; Yep; we're done
+	ret
+
+	
+	
+
+; Synchronize two calculators (robust and "slow")
+; WARNING: doesn't timeout!
+; Returns z and id in a (0/1) on sync, nz on Clear pressed
+
+bell_sync:
+	; Pull lines low for a while as handshake
+	setLowLow()
+	; Some delay
+	ld bc,bell_timeout
+_bell_sync_loop:
+	dec bc
+	ld a,b
+	or c
+	jp nz,_bell_sync_loop
+	setHighHigh()
+
+	; See if lines have been pulled low as response
+	readLines()
+	cp 3
+	; Lines have been pulled low, sync ready, we're calc 1
+	ld c,1
+	jp z,_bell_synced
+
+	; Otherwise, we have to wait for the other calc, and we're calc 0
+_bell_sync_wait:
+
+	; Scan for Clear key
+	ld a,$FF
+	out (1),a
+	ld a,$FD
+	out (1),a
+	in a,(1)
+	cp 191
+	; return nz if Clear is pressed
+	jp z,_bell_timeout
+
+	readLines()
+	cp 3
+	jr nz,_bell_sync_wait
+	
+	; The lines are low, respond!
+	setLowLow()
+
+	; Keep the lines low long enough to be detected
+	ld bc,bell_timeout
+_bell_sync_loop2:
+	nop
+	dec bc
+	ld a,b
+	or c
+	jp nz,_bell_sync_loop2
+	setHighHigh()
+
+	; We're calc 0
+	ld a,0
+	ret
+
+_bell_synced:
+	; Wait for the lines to go back up
+	readLines()
+	or a
+	jp nz,_bell_synced
+	; Restore calc id
+	ld a,c
+	; And return
+	ret
+
+
+
+
+
+
+
+
+#ifdef bell_dataBlock
+
+; =======================
+; Transferring datablocks
+; =======================
+
+; Send a block of data to the other calculator. Expects
+; hl to be a pointer to the data block and b to be the
+; number of bytes to be sent ( 0 < b < 256 ).
+; Returns nz on transfer failed or z on succes.
+
+bell_sendBlock:
+	push bc
+	ld a,b
+	call bell_sendByte
+	pop bc
+	ret nz
+_bell_sendBlock_loop:
+	ld a,(hl)
+	push bc
+	call bell_sendByte
+	pop bc
+	ret nz
+	inc hl
+	djnz _bell_sendBlock_loop
+	ret
+	
+	
+	
+; Receives a block of data from the other calculator.
+; Expects hl to be a pointer to a buffer to store the data.
+; Returns nz on transfer failed or z on succes.
+
+bell_recvBlock:
+	call bell_recvByte
+	ret nz
+	ld b,a
+_bell_recvBlock_loop:
+	push bc
+	call bell_recvByte
+	pop bc
+	ret nz
+	ld (hl),a
+	inc hl
+	djnz _bell_recvBlock_loop
+	ret
+	
+
+
+#ifdef bell_dataSwap
+
+; Swaps a block of data between two calculators. Requires
+; you to have called bell_connect first to setup calc IDs.
+; Expects hl to be a pointer to a block of data to be sent,
+; de to be a pointer to a buffer to store received data, and
+; b to be the number of bytes to be swapped.
+
+bell_swapBlock:
+	ld a,(hl)
+	push bc
+	push de
+	call bell_swapByte
+	pop de
+	pop bc
+	ret nz
+	ld (de),a
+	inc hl
+	inc de
+	djnz bell_swapBlock
+	ret
+
+#endif
+	
+#endif
+
+
+
+
+
+
+
+#ifdef bell_largeBlock
+
+; =============================
+; Transferring large datablocks
+; =============================
+
+; Send a block of data to the other calculator. Expects
+; hl to be a pointer to the data block and bc to be the
+; number of bytes to be sent ( 0 < bc < 65536 ).
+; Returns nz on transfer failed or z on succes.
+
+bell_sendLargeBlock:
+	push bc
+	ld a,b
+	call bell_sendByte
+	pop bc
+	ret nz
+	push bc
+	ld a,c
+	call bell_sendByte
+	pop bc
+	ret nz
+_bell_sendLargeBlock_loop:
+	ld a,(hl)
+	push bc
+	call bell_sendByte
+	pop bc
+	ret nz
+	inc hl
+	dec bc
+	ld a,b
+	or c
+	jp nz,_bell_sendLargeBlock_loop
+	ret
+	
+	
+	
+; Receives a block of data from the other calculator.
+; Expects hl to be a pointer to a buffer to store the data.
+; Returns nz on transfer failed or z on succes.
+
+bell_recvLargeBlock:
+	call bell_recvByte
+	ret nz
+	ld b,a
+	push bc
+	call bell_recvByte
+	pop bc
+	ret nz
+	ld c,a
+_bell_recvLargeBlock_loop:
+	push bc
+	call bell_recvByte
+	pop bc
+	ret nz
+	ld (hl),a
+	inc hl
+	dec bc
+	ld a,b
+	or c
+	jp nz,_bell_recvLargeBlock_loop
+	ret
+
+
+
+#ifdef bell_dataSwap
+
+; Swaps a large block of data between two calculators. Requires
+; you to have called bell_connect first to setup calc IDs.
+; Expects hl to be a pointer to a block of data to be sent,
+; de to be a pointer to a buffer to store received data, and
+; bc to be the number of bytes to be swapped.
+
+bell_swapLargeBlock:
+	ld a,(hl)
+	push bc
+	push de
+	call bell_swapByte
+	pop de
+	pop bc
+	ret nz
+	ld (de),a
+	inc hl
+	inc de
+	dec bc
+	ld a,b
+	or c
+	jp nz,bell_swapLargeBlock
+	ret
+
+#endif
+
+#endif
+
+
+
+
+
+
+
+#ifdef bell_Strings
+
+; ====================================
+; Transferring zero terminated strings
+; ====================================
+
+; Send a string to the other calculator. Expects
+; hl to be a pointer to a string. Returns nz on
+; transfer failed or z on succes.
+
+bell_sendString:
+	ld a,(hl)
+	call bell_sendByte
+	ret nz
+	ld a,(hl)
+	or a
+	ret z
+	inc hl
+	jp bell_sendString
+	
+
+
+; Receives a string from the other calculator.
+; Expects hl to be a pointer to a buffer to store
+; the string. Returns nz on transfer failed or z
+; on succes.
+
+bell_recvString:
+	call bell_recvByte
+	ret nz
+	ld (hl),a
+	or a
+	ret z
+	inc hl
+	jp bell_recvString
+
+
+
+#ifdef bell_dataSwap
+
+; Swaps a string between two calculators. Requires you
+; to have called bell_connect first to setup calc IDs.
+; Expects hl to be a pointer to a string to be sent,
+; de to be a pointer to a buffer to store the received
+; string.
+
+bell_swapString:
+	ld a,(hl)
+	push de
+	call bell_swapByte
+	pop de
+	ret nz
+	; Are we receiving zero?
+	ld (de),a
+	or a
+	; Yes; skip pointer increase
+	jp z,bell_swapString_skipDE
+	; If not; increase pointer
+	inc de
+	; Did we send zero?
+	ld a,(hl)
+	or a
+	; Yes; skip pointer increase, repeat
+	jp z,bell_swapString
+	; If not; increase pointer
+	inc hl
+	; Repeat
+	jp bell_swapString
+	
+bell_swapString_skipDE:
+	; We have received zero
+	; Did we also send zero?
+	ld a,(hl)
+	or a
+	; Yes; we're done then
+	ret z
+	; If not; increase pointer
+	inc hl
+	; Repeat
+	jp bell_swapString
+
+#endif
+
+#endif
+
+
+
+
+
+
+
+; _BellEnd:
+
+; .echo "BELL: Library included, size is "
+; .echo _BellEnd-_BellBegin
+; .echo " bytes\n"

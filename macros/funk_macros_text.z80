@@ -1,0 +1,131 @@
+;
+; funk text macros
+; by Robert Kuhfss
+;
+
+;============================================
+;	> defines
+;============================================
+#define small	0
+#define big		1
+
+;============================================
+;	> short
+;============================================
+#define textinverse.on	set textInverse, (iy + textflags)
+#define textinverse.off	res textInverse, (iy + textflags)
+#define textonbuf.on	set textWrite,(iy + sGrFlags)
+#define textonbuf.off	res textWrite,(iy + sGrFlags)
+#define bigfont.on	set fracDrawLFont, (iy + fontFlags)
+#define bigfont.off	res fracDrawLFont, (iy + fontFlags)
+#define bigfont.check	bit fracDrawLFont, (iy + fontFlags) ; NZ = Big font
+
+;============================================
+;	> print
+;============================================
+; #macro _funk_print(_page)
+; 	#if funk_type = app
+; 		#define funk_printText_usage
+; 		#ifdef _page
+; 			pcall	funk_printText, _page
+; 		#else
+; 			call	funk_printText
+; 		#endif
+; 	#else
+; 		bcall	_VPutS
+; 	#endif
+; #endmacro
+;#define print _funk_print(
+
+;============================================
+;	> .str
+;============================================
+#macro _funk_append_zero(_str_1, _str_2, _str_3, _str_4, _str_5, _str_6, _str_7)
+	#ifdef _str_1 \ .db _str_1 \ #endif
+	#ifdef _str_2 \ .db _str_2 \ #endif
+	#ifdef _str_3 \ .db _str_3 \ #endif
+	#ifdef _str_4 \ .db _str_4 \ #endif
+	#ifdef _str_5 \ .db _str_5 \ #endif
+	#ifdef _str_6 \ .db _str_6 \ #endif
+	#ifdef _str_7 \ .db _str_7 \ #endif
+	.db 0
+#endmacro
+#define .str _funk_append_zero(
+
+;============================================
+;	> pen
+;============================================
+; pen DOWN, RIGHT, [SIZE=small], [SAVE_DE=false]
+#macro _funk_pen(_pen_down, _pen_right, _pen_size, _pen_save)
+	#ifndef _pen_save \ #define _pen_save false \ #endif
+	#ifndef _pen_size \ #define _pen_size small \ #endif
+	
+	#if _pen_save = true
+		push	de
+	#endif
+	
+	ld	de, 256 * _pen_down + _pen_right
+
+	#if _pen_size = small
+		ld 	(pencol), de
+	#else
+		ld 	(currow), de
+	#endif
+	
+	#if _pen_save = true
+		pop	de
+	#endif
+#endmacro
+#define pen _funk_pen(
+
+;============================================
+;	> .text (auto create)
+;============================================
+; creates text on the fly
+#macro _funk_autoText(_autoText_label, _autoText_string)
+	#define _autoText_label concat( "\"", _autoText_label, "\"" )
+	#ifdef var_module
+		.parse "#define _autoText_label \"txt.", var_module, ".", _autoText_label, "\""
+	#else
+		.parse "#define _autoText_label \"txt.", _autoText_label, "\""
+	#endif
+	.setup_funkdata
+	.echo >> _funk_data.z80 _autoText_label, " .str \"", _autoText_string, "\"\n\n"
+#endmacro
+#define .text _funk_autoText(
+
+;============================================
+;	> text
+;============================================
+#macro _funk_text(_text_down, _text_right, @_text_label, _text_make)
+
+	#ifndef _text_make
+		#if SPASMVER >= 3
+			; make a label if parameter is a string
+			#define _text_make eval(str(_text_label))
+		#else
+			#define _text_make false
+		#endif
+	#endif
+
+	#if _text_make = true
+		#ifndef funk_text_counter \ #define funk_text_counter 0 \ #endif
+		.setup_funkdata
+		.echo >> _funk_data.z80 "funkText_", funk_text_counter, " .str \"", _text_label, "\"\n\n"
+		.parse "#define _text_label funkText_", funk_text_counter
+		#define funk_text_counter eval(funk_text_counter+1)
+	#endif
+
+	pen	_text_down, _text_right
+
+	ld	hl, _text_label
+
+	; print it on the screen
+	#if funk_type = app
+		#define funk_printText_usage
+		pcall	funk_printText.ram, _text_label
+	#else
+		bcall	_VPutS
+	#endif
+#endmacro
+#define text _funk_text(

@@ -1,0 +1,275 @@
+.nolist
+#ifndef funk
+#define funk
+;
+; funk include file
+; by Robert Kuhfss
+;
+
+;#define FUNK_DEBUG
+;#define FUNK_DEBUG_BEGIN
+
+
+;============================================
+;	> .funkinclude
+;============================================
+; Includes files from the funk directory
+;  using FUNK_PATH
+;--------------------------------------------
+#ifndef FUNK_PATH
+	#define FUNK_PATH "funk/"
+#endif
+#macro _funk_include(_include_file)
+	.echo > _funk_include.z80 "#include \"", FUNK_PATH, _include_file, "\""
+	#include _funk_include.z80
+; 	.parse "#include \"", FUNK_PATH, _include_file, "\""
+	; parse macro doesn't work with include
+#endmacro
+#define .funkinclude _funk_include(
+
+
+;============================================
+;	> primary includes
+;============================================
+.funkinclude "header/defines.z80"
+.funkinclude "macros/funk_macros_logging.z80"
+
+
+;============================================
+;	> .parse macro
+;============================================
+#macro _parse(_parse_content1, _parse_content2, _parse_content3, _parse_content4, _parse_content5, _parse_content6, _parse_content7, _parse_content8)
+	clr()
+	wr(_parse_content1, _parse_content2, _parse_content3, _parse_content4, _parse_content5, _parse_content6, _parse_content7, _parse_content8)
+	run()
+#endmacro
+#define .parse _parse(
+
+
+;============================================
+;	> funk main definition
+;============================================
+; .funk ["NAME"="DEFAULT"], [TYPE=*nostub/mirageos/ion/app], [CALC=*ti83p/ti83]
+#macro _funkdef(_name, _type, _calc)
+	.debug "Entering '.funk'"
+	#ifdef funkdef_success
+		.err "Duplicate '.funk' found!"
+	#else
+
+		#ifdef _name
+			#define funk_name concat("\"", _name, "\"")
+		#else
+			; if not given, default to "DEFAULT"
+			#define funk_name "DEFAULT"
+		#endif
+		
+		#ifdef _type
+			#define funk_type eval(_type)
+		#else
+			; if not given, default to nostub
+			.nostub
+		#endif
+		
+		#ifdef _calc
+			#define funk_calcmodel eval(_calc)
+		#else
+			; if not given, default to ti83p
+			.ti83p
+		#endif
+		
+		#if funk_calcmodel = ti83
+			#define _start_calcname "TI83"
+			.funkinclude "header/ti83.z80"
+			#define funk_ram_start saveSScreen
+		#endif
+		#if funk_calcmodel = ti83p
+			#define _start_calcname "TI83+"
+			.funkinclude "header/ti83p.z80"
+			#define funk_ram_start saveSScreen
+		#endif
+		
+		.funkinclude "macros/funk_macros.z80"
+		
+		#if funk_type = nostub
+			#define _start_option "Nostub"
+			.nostub
+			.progstart
+			bcall	_runIndicOff
+		#endif
+		#if funk_type = app
+			#define _start_option "Application"
+			#if funk_calcmodel = ti83
+				.err "Calc model doesn't support apps"
+			#endif
+			.defpage 0, funk_name
+			.setup_funksetup
+		#endif
+		#if funk_type = custom
+			#define _start_option "Custom"
+		#endif
+		#if funk_type = ion
+			#define _start_option "ION"
+			.progstart
+			ret
+			jr	nc, funk_start
+			.db	funk_name, 0
+		#endif
+		#if funk_type = mirageos
+			#define _start_option "MirageOS"
+			#if funk_calcmodel = ti83
+				.err "Calc model doesn't support MirageOS"
+			#endif
+			.progstart
+			ret
+			.db 1
+			#include icon.z80 ; 15x15 icon
+			.db funk_name, 0
+		#endif
+		.echo "# Compiling \"", funk_name, "\" (", _start_option, ") for ", _start_calcname, "..."
+		.echo "# FunkLibrary by Robert Kuhfss"
+		.locate funk_ram_start
+		#if funk_type != custom
+funk_start
+		#endif
+		#ifdef FUNK_DEBUG_BEGIN
+			debug
+		#endif
+		#if funksetup_setup
+			.debug "Will call 'funk_setup' after start up"
+			call	funk_setup
+		#endif
+		#define funkdef_success
+		#undef _start_option
+		#undef _start_calcname
+	#endif
+#endmacro
+#define .funk _funkdef(
+
+;============================================
+;	> progstart
+;============================================
+#macro .progstart
+	#if funk_calcmodel = ti83
+		.org	$9D95
+	#else
+		; default
+		.org	$9D95 -2
+		.db	$BB, $6D
+	#endif
+#endmacro
+
+;============================================
+;	> funk data
+;============================================
+#macro .setup_funkdata
+	#ifndef funkdata_setup
+		.echo > _funk_data.z80 ";* funk data include file\n\n"
+		#define funkdata_setup
+	#endif
+#endmacro
+
+#macro .include_funkdata
+	#ifdef funkdata_setup
+		#include _funk_data.z80
+		#undef funkdata_setup ; must be setup again
+	#endif
+#endmacro
+
+;============================================
+;	> funk setup
+;============================================
+#macro .setup_funksetup
+	#ifndef funksetup_setup
+		.echo > _funk_setup.z80 "; * funk setup include file\n"
+		.echo >> _funk_setup.z80 "funk_setup\n"
+		#define funksetup_setup
+	#endif
+#endmacro
+
+#macro .include_once_funksetup
+	#ifndef funksetup_included
+		#ifdef funksetup_setup
+			#include _funk_setup.z80
+			ret
+		#endif
+		#define funksetup_included
+	#endif
+#endmacro
+
+#macro _funkSetup(_call)
+	.setup_funksetup
+	.echo >> _funk_setup.z80 " call ", _call, "\n"
+#endmacro
+#define .funkSetup _funkSetup(
+#define .setup _funkSetup(
+
+;============================================
+;	> funk functions
+;============================================
+#macro .include_once_funkfunctions
+	#ifndef funkfunctions_included
+		.funkinclude "functions/funk_functions.z80"
+		#define funkfunctions_included
+	#endif
+#endmacro
+
+#macro .include_once_funkfunctions2
+	#ifndef funkfunctions2_included
+		.funkinclude "functions/funk_functions2.z80"
+		#define funkfunctions2_included
+	#endif
+#endmacro
+
+;============================================
+;	> funk delayed action
+;============================================
+#macro .setup_funkdelayed
+	#ifndef funkdelayed_setup
+		.echo > _funk_delayed.z80 ";* funk delayed include file\n\n"
+		#define funkdelayed_setup
+	#endif
+#endmacro
+#macro .include_once_funkdelayed
+	#ifndef funkdelayed_included
+		#ifdef funkdelayed_setup
+			#include _funk_delayed.z80
+		#endif
+		#define funkdelayed_included
+	#endif
+#endmacro
+
+;============================================
+;	> funk end
+;============================================
+#macro .funkend
+	.debug "Entering '.funkend'"
+	#ifdef funkend_success
+		.err "Duplicate \".funkend\" found!"
+	#else
+		.include_once_funkfunctions
+		.include_once_funkfunctions2
+		.include_once_funksetup
+		#ifdef funkmake_graphics_success
+			.debug "Including '_funk_graphics.z80'"
+			#include funk_graphics/_funk_graphics.z80
+		#endif
+		.include_funkdata
+		.include_once_funkdelayed
+		
+		#if funk_type = app
+			.validate
+		#else
+			#if funk_type != custom
+				.echo "# Program size: ", $ - funk_start, " bytes"
+				#if funk_type != app && $ >= $C000 ; ram limit
+					#define _warnmsg "Ram execution limit reached (", $ - $C000, " overflow)"
+					.warn _warnmsg
+				#endif
+			#endif
+		#endif
+		#define funkend_success
+	#endif
+#endmacro
+
+#endif ; funk
+.list

@@ -1,0 +1,111 @@
+;
+; funk test macros
+; by Robert Kuhfss
+;
+
+#define funk_errors 0
+
+
+; Initializes funk test mode
+#macro .funktest
+	#define funk_test
+	_funk_write_errors() ; writes "0"
+#endmacro
+
+
+; Adds one to errors and writes errors number in a file
+#macro .addError
+	#define funk_errors eval(funk_errors + 1)
+	_funk_write_errors()
+#endmacro
+
+
+; Writes errors number in a file
+#macro _funk_write_errors()
+	#ifdef funk_test
+		.parse ".echo > ", funk_name, ".errors \"", funk_errors, "\""
+	#endif
+#endmacro
+
+
+; Replacement for .err in test mode
+#macro _funk_test_err(msg1, msg2, msg3, msg4, msg5, msg6, msg7)
+	.echo "Error: ", msg1, msg2, msg3, msg4, msg5, msg6, msg7
+	.addError
+#endmacro
+
+;
+; funk test: Assertions
+;
+
+#macro Assert.AreEqual(_actual, _expected, _message)
+	#if _actual != _expected
+		#ifdef _message
+			.echo _message
+		#else
+			.echo "Assert error: Actual value {", _actual, "} does not equal expected value {", _expected, "}"
+		#endif
+		.addError
+	#endif
+#endmacro
+
+#macro Assert.IsTrue(_actual, _message)
+	#if _actual != true
+		#ifdef _message
+			.echo _message
+		#else
+			.echo "Assert error: Value {", _actual, "} is not true"
+		#endif
+		.addError
+	#endif
+#endmacro
+
+#macro Assert.IsFalse(_actual, _message)
+	#if _actual != false
+		#ifdef _message
+			.echo _message
+		#else
+			.echo "Assert error: Value {", _actual, "} is not false"
+		#endif
+		.addError
+	#endif
+#endmacro
+
+
+#macro Assert.Exists(@_exists_define, _exists_message)
+	#define _exists_define concat( "\"", _exists_define, "\"" )
+	#undef _exists ; make sure
+	.parse "#ifdef ", _exists_define, " \\ #define _exists \\ #endif"
+	#ifndef _exists
+		#ifdef _exists_message
+			.echo _exists_message
+		#else
+			.echo "Assert error: Define {", _exists_define, "} does not exist"
+		#endif
+		.addError
+	#endif
+	#undef _exists
+#endmacro
+
+
+#macro Assert.IsOnPage(_label, _page, _message)
+	#if funk_type = app
+		#define _label concat("\"", _label, "\"")
+		.funkdelayed_setup
+		#ifdef _message
+			.echo >> _funk_delayed.z80 " Assert.AreEqual(page(", _label, "), ", _page, ", ", _message, ")\n"
+		#else
+			.echo >> _funk_delayed.z80 " Assert.AreEqual(page(", _label, "), ", _page, ")\n"
+		#endif
+	#endif
+#endmacro
+
+#macro Assert.Error(_message)
+	#ifdef _message
+		.echo _message
+	#else
+		.echo "Assert error: This code should not have been reached"
+	#endif
+	.addError
+#endmacro
+

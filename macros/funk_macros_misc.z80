@@ -1,0 +1,166 @@
+;
+; funk misc macros
+; by Robert Kuhfss
+;
+
+;============================================
+;	> FUNCTIONS
+;============================================
+#define wait	#define funk_wait_usage \ call funk_wait
+#define anykey	#define funk_anykey_usage \ call funk_anykey
+#define debug	#define funk_debug_usage \ call funk_waitdebug
+#define deref	#define funk_dereference_usage \ call funk_dereference
+#define toHexChar	#define funk_toHexChar_usage \ call funk_toHexChar
+#define shuffle	#define funk_shuffle_usage \ call funk_shuffle
+#define random	#define funk_random_usage \ call funk_random
+
+#define bcall	b_call(
+#define getkey	bcall _getCSC
+#define puAll	push af \ push bc \ push de \ push hl
+#define poAll	pop hl \ pop de \ pop bc \ pop af
+
+#define byte(_high, _low) eval(16 * _high + _low) ; byte 
+#define nibble(_high, _low) eval(16 * _high + _low) ; byte 
+#define oneByte(_high, _low) eval(16 * _high + _low) ; byte
+
+#define word(_high, _low) eval(256 * _high + _low) ; word
+#define tuple(_high, _low) eval(256 * _high + _low) ; word
+#define twoByte(_high, _low) eval(256 * _high + _low) ; word
+
+
+;============================================
+;	> fetch
+;============================================
+#macro _funk_fetch(_fetch_type, _fetch_table, _fetch_elementSize)
+	#define funk_fetch_usage
+	ld	c,  _fetch_type
+	ld	hl, _fetch_table
+	ld	de, _fetch_elementSize
+	call	funk_fetch
+#endmacro
+#define fetch _funk_fetch(
+
+;============================================
+;	> get
+;============================================
+; get ARRAY_ADDRESS, INDEX or INDEX_ADDRESS, [SIZE=1], [SAVE=false]
+;============================================
+#macro _funk_get(_get_array, _get_id, _get_size, _get_save)
+	#ifndef _get_id \ #define _get_id 0 \ #endif
+	#ifndef _get_size \ #define _get_size 1 \ #endif
+
+	#ifndef _get_save
+		#define _get_save false
+	#endif
+	
+	#if _get_size = 1
+		; entry size == 1
+		#if _get_id > 255
+			ld	a, (_get_id)
+		#else
+			ld	a, _get_id
+		#endif
+		ld	hl, _get_array
+		#define funk_getHLA_usage
+		call	funk_getHLA
+	#else
+		; entry size > 1
+		#if _get_save = true
+			push	de
+		#endif
+		#if _get_id > 255
+			ld	a, (_get_id)
+		#else
+			ld	a, _get_id
+		#endif
+		ld	hl, _get_array
+		ld	de, _get_size
+		#define funk_getHLADE_usage
+		call	funk_getHLADE
+		#if _get_save = true
+			pop	de
+		#endif
+	#endif
+#endmacro
+#define get _funk_get(
+
+
+;============================================
+;	> quit
+;============================================
+#macro quit
+	#if funk_type = nostub
+		res onInterrupt, (iy + onFlags)
+		res donePrgm, (iy + doneFlags)
+	#endif
+	#if funk_type = app
+		bcall	_JForceCmdNoChar
+	#else
+		ret
+	#endif
+#endmacro
+
+
+;============================================
+;	> probe (test PTR=0?)
+;============================================
+#define _probe(_probe_address) ld a, (_probe_address) \ or a
+#define probe _probe(
+
+
+;============================================
+;	> char
+;============================================
+#macro char(_number)
+	#if _number > 15
+		.err "Error in \'char\': Number is > 15
+	#else
+		; 0 - 15
+		#if _number > 9
+			; A - F
+			($40 + (_number - 9))
+		#else
+			; 0 - 9
+			($30 + _number)
+		#endif
+	#endif
+#endmacro
+
+
+;============================================
+;	> addTo
+;============================================
+; addTo ADDRESS, [AMOUNT=1], [SAVE=false]
+;--------------------------------------------
+#macro _addTo(_addTo_address, _addTo_add, _addTo_save)
+	#ifndef _addTo_add \ #define _addTo_add 1 \ #endif
+	#ifdef _addTo_save
+		push	af
+	#endif
+	ld	a, (_addTo_address)
+	#if _addTo_add = 1
+		inc	a
+	#else
+		add	a, _addTo_add
+	#endif
+	ld	(_addTo_address), a
+	#ifdef _addTo_save
+		pop	af
+	#endif
+#endmacro
+#define addTo _addTo(
+
+;============================================
+;	> fill
+;============================================
+; fill START, SIZE, [CONTENT=0]
+#macro _funk_fill(_fill_address, _fill_size, _fill_content)
+	#ifndef _fill_content \ #define _fill_content 0 \ #endif
+	ld	hl,	_fill_address
+	ld	(hl),	_fill_content
+	ld	de,	_fill_address + 1
+	ld	bc,	_fill_size - 1
+	ldir
+#endmacro
+#define fill _funk_fill(
+

@@ -1,0 +1,43 @@
+#ifndef funk_defines_included
+#define funk_defines_included
+;============================================
+;	> defines
+;============================================
+
+; calc models
+#define ti82	1
+#define ti83	2
+#define ti83p	3
+#define ti84p	4
+#define other	5
+
+; file types
+#define nostub	1
+#define app		2
+#define custom	3
+#define ion		4
+#define mirageos	5
+
+#define .nostub	#define funk_type nostub
+#define .app	#define funk_type app
+#define .custom	#define funk_type custom
+#define .ion	#define funk_type ion
+#define .mirageos	#define funk_type mirageos
+
+#define .ti83	#define funk_calcmodel ti83
+#define .ti83p	#define funk_calcmodel ti83p
+#define .other	#define funk_calcmodel other
+
+
+;============================================
+;	> instructions
+;============================================
+
+.addinstr LD HL,BC	6069 2 NOP 1
+.addinstr LD BC,HL	444D 2 NOP 1
+.addinstr LD HL,DE	626B 2 NOP 1
+.addinstr LD DE,HL	545d 2 NOP 1
+.addinstr LD DE,BC	5059 2 NOP 1
+.addinstr LD BC,DE	424B 2 NOP 1
+
+#endif ; funk_defines_included

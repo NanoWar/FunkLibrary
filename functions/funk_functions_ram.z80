@@ -1,0 +1,56 @@
+#ifndef funk_functions_ram_included
+#define funk_functions_ram_included
+;
+; funk ram functions
+; by Robert Kuhfss
+;
+.nomodule
+
+;============================================
+;	> funk ram
+;============================================
+; Can be called twice to swap to page 3 etc.
+;--------------------------------------------
+#ifdef funk_swap_usage
+.funkSetupRam "funk_swap"
+;--------------------------------------------
+funk_swap.begin
+	; stack: *return
+	di
+	push	hl
+	pop	hl
+	ld	hl, funk_swap + (funk_swap.exit - funk_swap.begin)
+	ex	(sp), hl
+	; stack: old hl, *exit
+	; hl = return
+	dec	sp
+	dec	sp
+	ex	(sp), hl
+	; stack: *return, exit
+	; hl = old hl
+	ei
+
+	; swap to next page
+	push	af
+		in	a, (6)
+		dec	a
+		out	(6), a
+	pop	af
+
+	; return to ram function with exit pushed on the stack
+	ret
+
+funk_swap.exit
+	; swap back to previous page
+	push	af
+		in	a, (6)
+		inc	a
+		out	(6) ,a
+	pop	af
+	ret
+funk_swap.end
+;--------------------------------------------
+#endif ; funk_swap_usage
+
+
+#endif ; funk_functions_ram_included

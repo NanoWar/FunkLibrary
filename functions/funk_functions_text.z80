@@ -1,0 +1,35 @@
+#ifndef funk_functions_text_included
+#define funk_functions_text_included
+;
+; funk text functions
+; by Robert Kuhfss
+;
+.nomodule
+
+;============================================
+;	> funk print text
+;============================================
+#ifdef funk_printText_usage
+#ifdef funk_setupRamCalls ; 2+ page app
+.funkSetupRam "funk_printText"
+#else
+funk_printText
+#endif
+funk_printText.begin
+	#define funk_swap_usage
+	call	funk_swap ; swap to next page
+; 	jp	funk_printText2
+funk_printText.ram = funk_printText + ($ - funk_printText.begin); pcall
+_	ld	a, (hl)
+	inc	hl
+	or	a
+	ret	z
+	bcall	_vPutMap
+	ret	c
+	jr	-_
+funk_printText.end
+#endif ; funk_setupRamCalls
+#endif ; funk_printText_usage
+
+
+#endif ; funk_functions_text_included

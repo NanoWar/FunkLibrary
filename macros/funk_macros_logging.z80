@@ -1,0 +1,77 @@
+;
+; funk logging macros
+; by Robert Kuhfss
+;
+
+#define FUNK_LOGLEVEL_FATAL	1
+#define FUNK_LOGLEVEL_ERROR	2
+#define FUNK_LOGLEVEL_WARNING	3
+#define FUNK_LOGLEVEL_INFO	4
+#define FUNK_LOGLEVEL_DEBUG	5
+
+; Default
+#define FUNK_LOGLEVEL FUNK_LOGLEVEL_INFO
+
+#ifdef FUNK_DEBUG
+	#define FUNK_LOGLEVEL FUNK_LOGLEVEL_DEBUG
+#endif
+
+#macro _funk_log_fatal(msg1, msg2, msg3, msg4, msg5, msg6, msg7)
+	#if FUNK_LOGLEVEL >= FUNK_LOGLEVEL_FATAL
+		#if SPASMVER >= 3
+			.log > fatal msg1, msg2, msg3, msg4, msg5, msg6, msg7
+		#else
+			.error msg1, msg2, msg3, msg4, msg5, msg6, msg7
+		#endif
+	#endif
+#endmacro
+#define .fatal _funk_log_fatal(
+
+#macro _funk_log_error(msg1, msg2, msg3, msg4, msg5, msg6, msg7)
+	#if FUNK_LOGLEVEL >= FUNK_LOGLEVEL_ERROR
+		#ifdef funk_test
+			_funk_test_err(msg1, msg2, msg3, msg4, msg5, msg6, msg7)
+		#else
+			#if SPASMVER >= 3
+				.log > error msg1, msg2, msg3, msg4, msg5, msg6, msg7
+			#else
+				.error msg1, msg2, msg3, msg4, msg5, msg6, msg7
+			#endif
+		#endif
+	#endif
+#endmacro
+#define .err _funk_log_error(
+
+#macro _funk_log_warning(msg1, msg2, msg3, msg4, msg5, msg6, msg7)
+	#if FUNK_LOGLEVEL >= FUNK_LOGLEVEL_WARNING
+		#if SPASMVER >= 3
+			.log > warning msg1, msg2, msg3, msg4, msg5, msg6, msg7
+		#else
+			.echo "Warning: ",  msg1, msg2, msg3, msg4, msg5, msg6, msg7
+		#endif
+	#endif
+#endmacro
+#define .warn _funk_log_warning(
+
+#macro _funk_log_info(msg1, msg2, msg3, msg4, msg5, msg6, msg7)
+	#if FUNK_LOGLEVEL >= FUNK_LOGLEVEL_INFO
+		#if SPASMVER >= 3
+			.log > info msg1, msg2, msg3, msg4, msg5, msg6, msg7
+		#else
+			.echo "Info: ", msg1, msg2, msg3, msg4, msg5, msg6, msg7
+		#endif
+	#endif
+#endmacro
+#define .info _funk_log_info(
+
+#macro _funk_log_debug(msg1, msg2, msg3, msg4, msg5, msg6, msg7)
+	#if FUNK_LOGLEVEL >= FUNK_LOGLEVEL_DEBUG
+		#if SPASMVER >= 3
+			.log > debug msg1, msg2, msg3, msg4, msg5, msg6, msg7
+		#else
+			.echo "Debug: ", msg1, msg2, msg3, msg4, msg5, msg6, msg7
+		#endif
+	#endif
+#endmacro
+#define .debug _funk_log_debug(
+

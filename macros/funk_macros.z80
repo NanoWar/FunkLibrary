@@ -1,0 +1,17 @@
+.nolist
+;
+; funk macros include file
+; by Robert Kuhfss
+;
+
+
+.funkinclude "macros/funk_macros_helper.z80"
+.funkinclude "macros/funk_macros_var.z80"
+.funkinclude "macros/funk_macros_enum.z80"
+.funkinclude "macros/funk_macros_misc.z80"
+.funkinclude "macros/funk_macros_screen.z80"
+.funkinclude "macros/funk_macros_test.z80"
+.funkinclude "macros/funk_macros_text.z80"
+.funkinclude "macros/funk_macros_app.z80"
+
+.list

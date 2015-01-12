@@ -1,0 +1,265 @@
+;
+; funk screen functions
+; by Robert Kuhfss
+;
+.nomodule
+
+;============================================
+; WAIT for 2nd
+;============================================
+#ifdef funk_wait_usage
+.debug "Including 'funk_wait'"
+;--------------------------------------------
+funk_wait
+	getkey
+	cp	sk2nd
+	ret	z
+	jr	funk_wait
+;--------------------------------------------
+#endif
+
+
+;============================================
+; ANYKEY
+;============================================
+#ifdef funk_anykey_usage
+.debug "Including 'funk_anykey'"
+;--------------------------------------------
+funk_anykey
+	getkey
+	or	a
+	ret	nz
+	jr	funk_anykey
+;--------------------------------------------
+#endif
+
+
+;============================================
+; DEREF
+;============================================
+;inputs:
+; hl
+;outputs:
+; hl = (hl)
+;============================================
+#ifdef funk_dereference_usage
+.debug "Including 'funk_dereference'"
+;--------------------------------------------
+funk_dereference
+	push	af
+		ld	a, (hl)
+		inc	hl
+		ld	h, (hl)
+		ld	l, a
+	pop	af
+	ret
+;--------------------------------------------
+#endif
+
+
+#ifdef funk_toHexChar_usage
+.debug "Including 'funk_toHexChar'"
+;============================================
+; TOHEXCHAR
+;============================================
+funk_toHexChar
+	cp	10
+	jr	c, _
+	; A-F
+	sub	9
+	xor	$70 ; $70 = $40 xor $30
+_	; 0-9
+	xor	$30
+	ret
+#endif
+
+
+;============================================
+; FETCH
+;============================================
+;inputs:
+; a := index
+;macro:
+; c := offset
+; de := element size
+; hl := table
+;outputs:
+; hl := hl + (a * de) + c
+; b := a (?)
+;destroys:
+; bc, de, hl
+;============================================
+#ifdef funk_fetch_usage
+.debug "Including 'funk_fetch'"
+;--------------------------------------------
+funk_fetch
+	or	a
+	jr	z, ++_
+	ld	b, a
+_
+	add	hl, de
+	djnz	-_
+_
+	ld	e, c
+	ld	d, 0
+	add	hl, de
+	ld	b, a ; ?
+	ret
+;--------------------------------------------
+#endif
+
+#define funk_debug_usage ; !!!
+;============================================
+; DEBUG
+;============================================
+#ifdef funk_debug_usage
+.debug "Including 'funk_waitdebug'"
+;--------------------------------------------
+funk_waitdebug
+	puAll
+	push	ix
+_
+	ld	a, diReset
+	out	(1), a
+	ld	a, diGroup7
+	out	(1), a
+	in	a, (1)
+	cp	diMode
+	jr	nz, -_
+	pop	ix
+	poAll
+	ret
+;--------------------------------------------
+#endif
+
+
+#ifdef funk_getHLA_usage
+.debug "Including 'funk_getHLA'"
+funk_getHLA
+;inputs:
+; HL = array
+; A = index
+;outputs:
+; hl = HL+A
+; a = (HL+A)
+	push	de
+		ld	d, 0
+		ld	e, A
+		add	HL, de
+	pop	de
+	ld	a, (hl)
+	ret
+#endif
+
+
+#ifdef funk_getHLADE_usage
+.debug "Including 'funk_getHLADE'"
+funk_getHLADE
+;input:
+; HL = array
+; DE = size
+; A = index
+;output:
+; hl = HL+(DE*A)
+; a = (HL+(DE*A))
+_	add	hl, de
+	dec	a
+	or	a
+	jr	nz, -_
+	ld	a, (hl)
+	ret
+#endif
+
+;============================================
+; shuffle
+;============================================
+;input:	hl = $FF terminated array
+;output:	shuffled array in hl
+;destroys:	af, bc, de
+#ifdef funk_shuffle_usage
+.debug "Including 'funk_shuffle'"
+;--------------------------------------------
+funk_shuffle
+	ld	d, h
+	ld	e, l
+	call	funk_arrayLength
+	; load length in c
+	ld	c, b
+	ld	a, b
+	or	a
+	ret	z ; length is 0
+_
+	push	bc
+	push	hl
+		; deck + random
+		ld	b, c
+		#define funk_random_usage
+		call	funk_random
+		ld	b, 0
+		ld	c, a
+		add	hl, bc
+		; swap (hl) and (de)
+		ld	b, (hl)
+		ld	a, (de)
+		ex	de, hl
+		ld	(de), a
+		ld	(hl), b
+		ex	de, hl
+		; next
+		inc de
+	pop	hl
+	pop	bc
+	djnz	-_
+	ret
+;============================================
+; arrayLength
+;============================================
+;input:	hl = $FF terminated array
+;output:	b = length of array
+;destroys:	af
+;--------------------------------------------
+funk_arrayLength
+	push	hl
+		ld	b, -1
+_
+		ld	a, (hl)
+		inc	b
+		inc	hl
+		cp	$FF
+		jr	nz, -_
+	pop	hl
+	ret
+;--------------------------------------------
+#endif
+
+;============================================
+; random
+;============================================
+;input:	b = upper bound
+;ouput:	a = answer 0 <= a < b
+#ifdef funk_random_usage
+.debug "Including 'funk_random'"
+.var "funk_random_seed", 2
+;--------------------------------------------
+funk_random
+	push	hl
+	push	de
+		ld	hl, (funk_random_seed)
+		ld	a, r
+		ld	d, a
+		ld	e, (hl)
+		add	hl, de
+		add	a, l
+		xor	h
+		ld	(funk_random_seed), hl
+		sbc	hl, hl
+		ld	e, a
+		ld	d, h
+_		add	hl, de
+		djnz	-_
+		ld	a, h
+	pop	de
+	pop	hl
+	ret
+;--------------------------------------------
+#endif

@@ -1,0 +1,144 @@
+;
+; funk app functions
+; by Robert Kuhfss
+;
+.nomodule
+
+#if funk_type = app
+
+;============================================
+;	> page2call
+;============================================
+;jumps to (ix) on page 2
+;usage:	pcal	jump_address
+;		=
+;		ld	ix, jump_address
+;		call	funk_page2call
+#ifdef funk_page2call_usage
+.funksetupram "funk_page2call"
+funk_page2call.begin
+	; push "funk_page2call.exit" on stack without using a register
+	push	hl
+	ld	hl, funk_page2call + (funk_page2call.exit - funk_page2call.begin)
+	ex	(sp), hl
+	
+	push	af
+		in	a, (6)
+		dec	a
+		out	(6), a
+	pop	af
+	
+	jp	(ix)
+	
+funk_page2call.exit
+	push	af
+		in	a, (6)
+		inc	a
+		out	(6) ,a
+	pop	af
+	ret
+funk_page2call.end
+
+#endif ; #ifdef funk_page2call_usage
+
+
+#ifdef funk_pagedCall_usage
+.funksetupram "funk_pagedCall"
+
+funk_pagedCall.begin
+	di
+	exx
+	; stack: *data ptr
+	pop	hl
+	ld	e, (hl)
+	inc	hl
+	ld	d, (hl)
+	inc	hl
+	ld	b, (hl)
+	ld	c, a ; save a
+		in	a, (6)
+		sub	b ; swap
+		out	(6), a
+	ld	a, c
+	inc	hl
+	push	hl ; return
+	push	bc ; page
+	ld	hl, funk_pagedCall + (funk_pagedCall.exit - funk_pagedCall.begin)
+	push	hl ; exit
+	push	de ; jump
+	exx
+	ei
+	; stack: jump, exit, page, return
+	ret
+#ifdef bleh
+	; stack: *return, old hl, old bc
+	; hl = jump
+	; b = page offset
+	di
+	push	hl
+	push	af
+	pop	af ; sp + 2
+	pop	af ; sp + 2
+	ld	hl, funk_pagedCall + (funk_pagedCall.exit - funk_pagedCall.begin)
+	ex	(sp), hl
+	; stack: old af, jump, *exit, old hl, old bc
+	; hl = return
+	pop	af ; sp + 2
+	pop	af ; sp + 2
+	ex	(sp), hl
+	; stack: old af, jump, exit, old hl, *return
+	; hl = old bc
+	ld	c, l
+	ld	a, h
+	; ac = old bc
+; 	dec	b ; b = page
+	ld	h, b
+	dec	sp
+	dec	sp
+	ex	(sp), hl ; place page
+	; hl = old hl
+	dec	sp
+	dec	sp
+	dec	sp
+	dec	sp
+	dec	sp
+	dec	sp
+	; stack: *old af, jump, exit, page, return
+	; ac = old bc, hl = old hl
+	; b = page
+	ei
+
+	push	af
+		in	a, (6)
+		sub	b
+		out	(6), a ; swap page
+	pop	af
+	ld	b, a ; b = old b
+
+	pop	af ; af = old af
+	; stack: jump, exit, page, return
+
+	; make jump
+	ret
+#endif
+funk_pagedCall.exit
+	; stack: *page, return
+	ex	(sp), hl
+	; stack: *new hl, return
+	; h = page
+
+	ld	l, a ; save a
+		in	a, (6)
+		add	a, h
+		out	(6), a ; swap back
+	ld	a, l
+
+	pop	hl
+	; stack: *return
+	; hl = new hl
+	ret
+funk_pagedCall.end
+#endif ; #ifdef funk_pagedCall_usage
+
+
+#endif ; #if funk_type = app

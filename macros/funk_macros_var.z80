@@ -1,0 +1,96 @@
+;
+; Variable memory allocation macros
+; by Robert Kuhfss
+;
+
+
+; .module NAME
+#macro _varModule( @_varModule_module )
+	#ifndef _varModule_module
+		#undef var_module
+	#else
+		#define _varModule_module concat( "\"", _varModule_module, "\"" )
+		#define var_module eval( _varModule_module )
+	#endif
+#endmacro
+#define .module _varModule(
+#define .noModule _varModule()
+
+
+; .locate POINTER
+#macro _varLocate( _varLocate_pointer )
+	#define var_pointer eval( _varLocate_pointer )
+	#define var_start eval( _varLocate_pointer )
+	#define var_size_last 0
+#endmacro
+#define .locate _varLocate(
+
+
+; .var NAME, [SIZE=1]
+#macro _varAdd( @_varAdd_name, _varAdd_size )
+	#ifndef _varAdd_size
+		#define _varAdd_size 1
+	#endif
+	#ifndef var_pointer
+		#define var_pointer 0
+	#endif
+	#define _varAdd_name concat("\"", _varAdd_name, "\"")
+	#ifdef var_module
+		.parse "#define ", var_module, ".", _varAdd_name, " ", var_pointer
+	#else
+		.parse "#define ", _varAdd_name, " ", var_pointer
+	#endif
+	;.echo var_pointer, " > ", _varAdd_name
+	#define var_pointer eval( var_pointer + _varAdd_size )
+	#define var_size_last eval( _varAdd_size )
+	#undef _varAdd_size
+#endmacro
+#define .var _varAdd(
+
+
+; .free NAME, [DECREASE_FLAG]
+#macro _varFree( @_varFree_name, _varFree_decrease )
+	#define _varFree_name concat( "\"", _varFree_name, "\"" )
+	#ifdef _varFree_decrease
+		#ifdef var_size_last
+			#define _varFree_pointer eval( var_pointer - var_size_last )
+		#endif
+	#else
+		#define _varFree_pointer eval( var_pointer )
+	#endif
+	#ifdef var_module
+		.parse "#define ", var_module, ".", _varFree_name, " ", _varFree_pointer
+	#else
+		.parse "#define ", _varFree_name, " ", _varFree_pointer
+	#endif
+	#undef _varFree_pointer
+#endmacro
+#define .free _varFree(
+
+
+; .varEnd [MAX]
+#macro _varEnd( _varEnd_size )
+	#ifdef _varEnd_size
+		#define _var_used eval( var_pointer - var_start )
+		#if _var_used > _varEnd_size
+			.err "Var overflow by ", _var_used - _varEnd_size
+		#else
+			.debug "Var used ", _var_used, " bytes."
+		#endif
+	#endif
+	#undef var_pointer
+#endmacro
+#define .varEnd _varEnd(
+
+
+; .define NAME, VALUE
+; uses: var_module
+#macro _define( @_define_name, _define_value )
+	#define _define_name concat( "\"", _define_name, "\"" )
+	#ifdef var_module
+		#define _define_name var_module, ".", _define_name
+	#endif
+	.parse "#define ", _define_name, " eval(", _define_value, ")"
+#endmacro
+#define .define _define(
+

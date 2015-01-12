@@ -1,0 +1,10 @@
+;
+; funk helper macros
+; by Robert Kuhfss
+;
+
+;============================================
+;	> string
+;============================================
+#define string(name) concat("\"", name, "\"")
+

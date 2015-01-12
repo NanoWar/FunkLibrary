@@ -1,0 +1,72 @@
+;
+; Enum macros
+; by Robert Kuhfss
+;
+
+; .enumStart [START_VALUE=0]
+#macro _enumStart( _enumStart_location, @_enumStart_name )
+	#ifndef _enumStart_location
+		#define _enumStart_location 0
+	#endif
+	#ifdef _enumStart_name
+		#define _enumStart_name concat( "\"", _enumStart_name, "\"" )
+		#define enum_module eval( _enumStart_name )
+	#else
+		#undef enum_module
+	#endif
+	;
+	#define enum_location eval( _enumStart_location )
+#endmacro
+#define .enumStart _enumStart(
+
+
+; .enum LABEL, [SIZE=1]
+; uses: var_module
+#macro _enum( @_enum_name, _enum_size )
+	#define _enum_name concat( "\"", _enum_name, "\"" )
+	#ifndef enum_location
+		.enum
+	#endif
+	#ifndef _enum_size
+		#define _enum_size 1
+	#endif
+	;
+	#ifdef enum_module
+		#define _enum_name enum_module, ".", _enum_name
+	#endif
+	#ifdef var_module
+		#define _enum_name var_module, ".", _enum_name
+	#endif
+	.parse "#define ", _enum_name, " ", enum_location
+	#define enum_location eval(enum_location + _enum_size)
+#endmacro
+#define .enum _enum(
+
+
+; .enumEnd [MAX], [LAST_LABEL]
+#macro _enumEnd(@_enumEnd_name, _enumEnd_max)
+	#define _enumEnd_name concat( "\"", _enumEnd_name, "\"" )
+	#ifdef _enumEnd_name
+		.enum _enumEnd_name, 0
+	#else
+		#ifdef enum_module
+			#define _enumEnd_name enum_module, ".size"
+		#endif
+		#ifdef var_module
+			#define _enumEnd_name var_module, ".", _enumEnd_name
+		#endif
+		.enum _enumEnd_name, 0
+	#endif
+	#ifdef _enumEnd_max
+		#if enum_location > _enumEnd_max
+			#ifdef enum_module
+				.err "Enum \"", enum_module, "\" overflow by ", enum_location - _enumEnd_max
+			#else
+				.err "Enum overflow by ", enum_location - _enumEnd_max
+			#endif
+		#endif
+	#endif
+	#undef enum_location
+#endmacro
+#define .enumEnd _enumEnd(
+

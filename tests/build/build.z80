@@ -1,0 +1,10 @@
+
+	.funktest
+
+	Assert.Exists(funk_script_executed)
+
+	Assert.Exists(funk_includefile_included)
+
+	.delay "Assert.Exists(\"gfx.monster\")"
+
+	

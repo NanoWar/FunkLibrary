@@ -30,7 +30,7 @@
 #macro _funk_log_error(msg1, msg2, msg3, msg4, msg5, msg6, msg7)
 	#if FUNK_LOGLEVEL >= FUNK_LOGLEVEL_ERROR
 		#ifdef funk_test
-			_funk_test_err(msg1, msg2, msg3, msg4, msg5, msg6, msg7)
+			Test.Err(msg1, msg2, msg3, msg4, msg5, msg6, msg7)
 		#else
 			#if SPASMVER >= 3
 				.log > error msg1, msg2, msg3, msg4, msg5, msg6, msg7

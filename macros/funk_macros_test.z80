@@ -3,40 +3,41 @@
 ; by Robert Kuhfss
 ;
 
-#define funk_errors 0
+#define Test.Errors 0
 
 
 ; Initializes funk test mode
 #macro .funktest
 	#define funk_test
-	_funk_write_errors() ; writes "0"
+	Test.WriteErrors() ; writes "0"
 #endmacro
 
 
 ; Adds one to errors and writes errors number in a file
-#macro .addError
-	#define funk_errors eval(funk_errors + 1)
-	_funk_write_errors()
+#macro Test.AddError()
+	#define Test.Errors eval(Test.Errors + 1)
+	Test.WriteErrors()
 #endmacro
 
 
 ; Writes errors number in a file
-#macro _funk_write_errors()
+#macro Test.WriteErrors()
 	#ifdef funk_test
-		.parse ".echo > ", funk_name, ".errors \"", funk_errors, "\""
+		.parse ".echo > ", funk_name, ".errors \"", Test.Errors, "\""
 	#endif
 #endmacro
 
 
 ; Replacement for .err in test mode
-#macro _funk_test_err(msg1, msg2, msg3, msg4, msg5, msg6, msg7)
+#macro Test.Err(msg1, msg2, msg3, msg4, msg5, msg6, msg7)
 	.echo "Error: ", msg1, msg2, msg3, msg4, msg5, msg6, msg7
-	.addError
+	Test.AddError()
 #endmacro
 
-;
-; funk test: Assertions
-;
+
+;============================================
+;	> Assertions
+;============================================
 
 #macro Assert.AreEqual(_actual, _expected, _message)
 	#if _actual != _expected
@@ -45,7 +46,7 @@
 		#else
 			.echo "Assert error: Actual value {", _actual, "} does not equal expected value {", _expected, "}"
 		#endif
-		.addError
+		Test.AddError()
 	#endif
 #endmacro
 
@@ -56,7 +57,7 @@
 		#else
 			.echo "Assert error: Value {", _actual, "} is not true"
 		#endif
-		.addError
+		Test.AddError()
 	#endif
 #endmacro
 
@@ -67,7 +68,7 @@
 		#else
 			.echo "Assert error: Value {", _actual, "} is not false"
 		#endif
-		.addError
+		Test.AddError()
 	#endif
 #endmacro
 
@@ -82,7 +83,7 @@
 		#else
 			.echo "Assert error: Define {", _exists_define, "} does not exist"
 		#endif
-		.addError
+		Test.AddError()
 	#endif
 	#undef _exists
 #endmacro
@@ -106,6 +107,6 @@
 	#else
 		.echo "Assert error: This code should not have been reached"
 	#endif
-	.addError
+	Test.AddError()
 #endmacro
 

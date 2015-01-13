@@ -1,0 +1,9 @@
+
+	.funktest
+
+	text	10, 0, "Hello"
+	text	20, 0, string
+	quit
+
+string
+	.str "Funk"

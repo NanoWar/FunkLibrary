@@ -1,0 +1,19 @@
+
+	.funktest
+
+	pcall	page2
+	quit
+
+	Assert.AreEqual(page($), 1)
+	
+	Assert.AreEqual(page(page2), 2)
+
+	.nextpage
+
+page2
+	ret
+
+	Assert.AreEqual(page($), 2)
+
+	Assert.Exists(funk_pagedCall)
+

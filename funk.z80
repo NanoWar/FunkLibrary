@@ -50,28 +50,28 @@
 ;	> funk main definition
 ;============================================
 ; .funk ["NAME"="DEFAULT"], [TYPE=*nostub/mirageos/ion/app], [CALC=*ti83p/ti83]
-#macro _funkdef(_name, _type, _calc)
+#macro _funkdef(_funkdef_name, _funkdef_type, _funkdef_calc)
 	.debug "Entering '.funk'"
 	#ifdef funkdef_success
 		.err "Duplicate '.funk' found!"
 	#else
 
-		#ifdef _name
-			#define funk_name concat("\"", _name, "\"")
+		#ifdef _funkdef_name
+			#define funk_name concat("\"", _funkdef_name, "\"")
 		#else
 			; if not given, default to "DEFAULT"
 			#define funk_name "DEFAULT"
 		#endif
 		
-		#ifdef _type
-			#define funk_type eval(_type)
+		#ifdef _funkdef_type
+			#define funk_type eval(_funkdef_type)
 		#else
 			; if not given, default to nostub
 			.nostub
 		#endif
 		
-		#ifdef _calc
-			#define funk_calcmodel eval(_calc)
+		#ifdef _funkdef_calc
+			#define funk_calcmodel eval(_funkdef_calc)
 		#else
 			; if not given, default to ti83p
 			.ti83p
@@ -125,8 +125,8 @@
 			#include icon.z80 ; 15x15 icon
 			.db funk_name, 0
 		#endif
-		.echo "# Compiling \"", funk_name, "\" (", _start_option, ") for ", _start_calcname, "..."
 		.echo "# FunkLibrary by Robert Kuhfss"
+		.echo "# Compiling \"", funk_name, "\" (", _start_option, ") for ", _start_calcname, " ..."
 		.locate funk_ram_start
 		#if funk_type != custom
 funk_start
@@ -196,9 +196,9 @@ funk_start
 	#endif
 #endmacro
 
-#macro _funkSetup(_call)
+#macro _funkSetup(_setup_call)
 	.setup_funksetup
-	.echo >> _funk_setup.z80 " call ", _call, "\n"
+	.echo >> _funk_setup.z80 " call ", _setup_call, "\n"
 #endmacro
 #define .funkSetup _funkSetup(
 #define .setup _funkSetup(
@@ -238,6 +238,12 @@ funk_start
 	#endif
 #endmacro
 
+#macro _funk_delay(_delay_1, _delay_2, _delay_3, _delay_4, _delay_5, _delay_6, _delay_7)
+	.setup_funkdelayed
+	.echo >> _funk_delayed.z80 _delay_1, _delay_2, _delay_3, _delay_4, _delay_5, _delay_6, _delay_7
+#endmacro
+#define .delay _funk_delay(
+
 ;============================================
 ;	> funk end
 ;============================================
@@ -260,11 +266,19 @@ funk_start
 			.validate
 		#else
 			#if funk_type != custom
-				.echo "# Program size: ", $ - funk_start, " bytes"
+				.info "Program size: ", $ - funk_start, " bytes"
 				#if funk_type != app && $ >= $C000 ; ram limit
-					#define _warnmsg "Ram execution limit reached (", $ - $C000, " overflow)"
-					.warn _warnmsg
+					.warn "Ram execution limit reached (", $ - $C000, " overflow)"
 				#endif
+			#endif
+		#endif
+		#ifdef funk_test
+			#if Test.Errors = 1
+				.echo "# There was ", Test.Errors, " error."
+			#elif Test.Errors > 1
+				.echo "# There where ", Test.Errors, " errors."
+			#else
+				.echo "# There where no errors."
 			#endif
 		#endif
 		#define funkend_success

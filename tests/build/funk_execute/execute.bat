@@ -1,0 +1,1 @@
+echo #define funk_script_executed >> %TEMP%

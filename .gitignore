@@ -4,5 +4,5 @@
 **/*.bin
 **/*.lst
 **/*.lab
-
+**/*.errors
 **/_funk_*.z80

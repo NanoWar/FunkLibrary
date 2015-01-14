@@ -1,8 +1,10 @@
+#ifndef funk_functions_misc_included
+#define funk_functions_misc_included
+.nomodule
 ;
 ; funk screen functions
 ; by Robert Kuhfss
 ;
-.nomodule
 
 ;============================================
 ; WAIT for 2nd
@@ -263,3 +265,6 @@ _		add	hl, de
 	ret
 ;--------------------------------------------
 #endif
+
+
+#endif ; funk_functions_misc_included

@@ -1,3 +1,7 @@
+#ifdef bell
+#ifndef bell_included
+#define bell_included
+.nomodule
 ; =============================================
 ;    Binary data Exchange Link Library (Bell)
 ;               v0.1  By Timendus
@@ -19,10 +23,11 @@
 ; If the strings on both calculators don't match,
 ; an error will be generated.
 ;
-; CHANGE THIS TO YOUR PROGRAM/GAME NAME!
-;
-;bell_progId: .db "BELL",0
-bell_progId = funk_name
+#if funk_name_ptr
+	#define bell_progId eval(funk_name_ptr)
+#else
+bell_progId .str funk_name
+#endif
 ;
 ;
 ; -----------------------------
@@ -71,15 +76,8 @@ bell_timeout = 65000
 ; == Location to store calculator id ==
 ; -------------------------------------
 ;
-; Use the second option to define a location in
-; saferam if program writeback is not available.
-;
-;bell_calcId: .db 0
-;bell_calcId = saferam1
-; bell_connect_errorflag: .db 0
 .var bell_calcId
 .var bell_connect_errorflag
-
 ;
 ;
 ;
@@ -121,30 +119,8 @@ bell_timeout = 65000
 _BellBegin:
 
 
-
-
-
-; ===============================
-; Select proper hardware settings
-; ===============================
-
-#ifdef platform
-	#if platform == ti8x
-		#define TI83P
-	#else
-		#if platform == ti83
-			#define TI83
-		#else
-			#if platform == ti82
-				#define TI82
-			#endif
-		#endif
-	#endif
-#endif
-
-; #ifdef TI83P
 #if funk_calcmodel = ti83p
-; 	.echo "BELL: Selected hardware: Ti-83+\n"
+ 	.debug "BELL: Selected hardware: Ti-83+"
 
 	readtipbit = 0
 	readringbit = 1
@@ -154,9 +130,8 @@ _BellBegin:
 	writeringbit = 1
 #endif
 
-; #ifdef TI83
 #if funk_calcmodel = ti83
-; 	.echo "BELL: Selected hardware: Ti-83\n"
+ 	.debug "BELL: Selected hardware: Ti-83"
 
 	readtipbit = 2
 	readringbit = 3
@@ -166,9 +141,8 @@ _BellBegin:
 	writeringbit = 1
 #endif
 
-; #ifdef TI82
 #if funk_calcmodel = ti82
-; 	.echo "BELL: Selected hardware: Ti-82\n"
+ 	.debug "BELL: Selected hardware: Ti-82"
 	
 	readtipbit = 0
 	readringbit = 1
@@ -177,21 +151,6 @@ _BellBegin:
 	writetipbit = 2
 	writeringbit = 3
 #endif
-
-; #ifndef platform
-; #ifndef TI83P
-; #ifndef TI83
-; #ifndef TI82
-; 	.echo "BELL: You appear not to have selected any target platform\n"
-; 	.echo "      Bell needs to know which calculator to compile for!\n"
-; #endif
-; #endif
-; #endif
-; #endif
-
-
-
-
 
 
 ; =====================
@@ -958,9 +917,11 @@ bell_swapString_skipDE:
 
 
 
+ _BellEnd:
 
-; _BellEnd:
+.debug "BELL: Library included, size is ", _BellEnd-_BellBegin," bytes"
 
-; .echo "BELL: Library included, size is "
-; .echo _BellEnd-_BellBegin
-; .echo " bytes\n"
+
+#endif ; bell
+
+#endif ; bell_included

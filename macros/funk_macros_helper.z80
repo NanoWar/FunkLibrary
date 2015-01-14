@@ -1,4 +1,9 @@
+#ifndef funk_macros_helper_included
+#define funk_macros_helper_included
+.nomodule
 ;
 ; funk helper macros
 ; by Robert Kuhfss
 ;
+
+#endif ; funk_macros_helper_included

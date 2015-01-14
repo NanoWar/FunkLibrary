@@ -1,3 +1,6 @@
+#ifndef funk_macros_text_included
+#define funk_macros_text_included
+.nomodule
 ;
 ; funk text macros
 ; by Robert Kuhfss
@@ -129,3 +132,6 @@
 	#endif
 #endmacro
 #define text _funk_text(
+
+
+#endif ; funk_macros_text_included

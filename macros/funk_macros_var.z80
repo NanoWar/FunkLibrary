@@ -1,3 +1,5 @@
+#ifndef funk_macros_var_included
+#define funk_macros_var_included
 ;
 ; Variable memory allocation macros
 ; by Robert Kuhfss
@@ -94,3 +96,5 @@
 #endmacro
 #define .define _define(
 
+
+#endif ; funk_macros_var_included

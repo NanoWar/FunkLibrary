@@ -112,7 +112,8 @@
 			.progstart
 			ret
 			jr	nc, funk_start
-			.db	funk_name, 0
+			#define funk_name_ptr eval($)
+			.str funk_name
 		#endif
 		#if funk_type = mirageos
 			#define _start_option "MirageOS"
@@ -123,7 +124,8 @@
 			ret
 			.db 1
 			#include icon.z80 ; 15x15 icon
-			.db funk_name, 0
+			#define funk_name_ptr eval($)
+			.str funk_name
 		#endif
 		.echo "# FunkLibrary by Robert Kuhfss"
 		.echo "# Compiling \"", funk_name, "\" (", _start_option, ") for ", _start_calcname, " ..."

@@ -1,8 +1,10 @@
+#ifndef funk_functions_app_included
+#define funk_functions_app_included
+.nomodule
 ;
 ; funk app functions
 ; by Robert Kuhfss
 ;
-.nomodule
 
 #if funk_type = app
 
@@ -142,3 +144,6 @@ funk_pagedCall.end
 
 
 #endif ; #if funk_type = app
+
+
+#endif ; funk_functions_app_included

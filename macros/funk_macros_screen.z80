@@ -1,3 +1,6 @@
+#ifndef funk_macros_screen_included
+#define funk_macros_screen_included
+.nomodule
 ;
 ; funk screen macros
 ; by Robert Kuhfss
@@ -117,3 +120,6 @@
 	ldir
 #endmacro
 #define block _funk_block(
+
+
+#endif ; funk_macros_screen_included

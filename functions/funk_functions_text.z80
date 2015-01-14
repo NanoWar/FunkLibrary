@@ -1,10 +1,10 @@
 #ifndef funk_functions_text_included
 #define funk_functions_text_included
+.nomodule
 ;
 ; funk text functions
 ; by Robert Kuhfss
 ;
-.nomodule
 
 ;============================================
 ;	> funk print text

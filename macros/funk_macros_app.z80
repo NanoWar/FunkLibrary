@@ -1,3 +1,6 @@
+#ifndef funk_macros_app_included
+#define funk_macros_app_included
+.nomodule
 ;
 ; App macros
 ;
@@ -182,7 +185,7 @@ _           	.db _defpage_appname
 #define .defpage _funk_defpage(
 
 
-#else
+#else ; app
 
 ;
 ; Ignore errors if not an app
@@ -197,4 +200,7 @@ _           	.db _defpage_appname
 #define pcall _funk_pagedCall(
 
 
-#endif
+#endif ; app
+
+
+#endif ; funk_macros_app_included

@@ -1,3 +1,6 @@
+#ifndef funk_macros_enum_included
+#define funk_macros_enum_included
+.nomodule
 ;
 ; Enum macros
 ; by Robert Kuhfss
@@ -70,3 +73,4 @@
 #endmacro
 #define .enumEnd _enumEnd(
 
+#endif ; funk_macros_enum_included

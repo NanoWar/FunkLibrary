@@ -1,10 +1,10 @@
 #ifndef funk_functions_text2_included
 #define funk_functions_text2_included
+.nomodule
 ;
 ; funk text functions (page 2)
 ; by Robert Kuhfss
 ;
-.nomodule
 
 #ifdef bleh
 ;============================================

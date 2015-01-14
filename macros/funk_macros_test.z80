@@ -1,3 +1,6 @@
+#ifndef funk_macros_test_included
+#define funk_macros_test_included
+.nomodule
 ;
 ; funk test macros
 ; by Robert Kuhfss
@@ -110,3 +113,5 @@
 	Test.AddError()
 #endmacro
 
+
+#endif ; funk_macros_test_included

@@ -1,10 +1,10 @@
 #ifndef funk_functions_screen_included
 #define funk_functions_screen_included
+.nomodule
 ;
 ; funk screen functions
 ; by Robert Kuhfss
 ;
-.nomodule
 
 
 ;============================================

@@ -1,3 +1,5 @@
+#ifndef funk_macros_logging_included
+#define funk_macros_logging_included
 ;
 ; funk logging macros
 ; by Robert Kuhfss
@@ -75,3 +77,5 @@
 #endmacro
 #define .debug _funk_log_debug(
 
+
+#endif ; funk_macros_logging_included

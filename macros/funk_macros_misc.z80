@@ -1,3 +1,6 @@
+#ifndef funk_macros_misc_included
+#define funk_macros_misc_included
+.nomodule
 ;
 ; funk misc macros
 ; by Robert Kuhfss
@@ -26,6 +29,33 @@
 #define word(_high, _low) eval(256 * _high + _low) ; word
 #define tuple(_high, _low) eval(256 * _high + _low) ; word
 #define twoByte(_high, _low) eval(256 * _high + _low) ; word
+
+
+;============================================
+;	> relocate
+;============================================
+
+#macro _funk_relocate(_relocate_location)
+	#ifndef funk_relocate_oldLocation
+		#define funk_relocate_oldLocation eval($)
+		#define funk_relocate_location eval(_relocate_location)
+		.org funk_relocate_location
+	#else
+		.err "You cannot nest relocate blocks."
+	#endif
+#endmacro
+#define .relocate _funk_relocate(
+
+#macro _funk_endrelocate()
+	#ifdef funk_relocate_location
+		.org $ - funk_relocate_location + funk_relocate_oldLocation
+		#undefine funk_relocate_location
+		#undefine funk_relocate_oldLocation
+	#else
+		.err "No relocate statements corresponds to this endrelocate."
+	#endif
+#endmacro
+#define .endrelocate _funk_endrelocate(
 
 
 ;============================================
@@ -164,3 +194,5 @@
 #endmacro
 #define fill _funk_fill(
 
+
+#endif ; funk_macros_misc_included

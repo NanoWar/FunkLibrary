@@ -51,6 +51,7 @@
 	#ifdef _str_5 \ .db _str_5 \ #endif
 	#ifdef _str_6 \ .db _str_6 \ #endif
 	#ifdef _str_7 \ .db _str_7 \ #endif
+	#ifdef _str_8 \ .db _str_8 \ #endif
 	.db 0
 #endmacro
 #define .str _funk_append_zero(
@@ -82,26 +83,9 @@
 #define pen _funk_pen(
 
 ;============================================
-;	> .text (auto create)
-;============================================
-; creates text on the fly
-#macro _funk_autoText(_autoText_label, _autoText_string)
-	#define _autoText_label concat( "\"", _autoText_label, "\"" )
-	#ifdef var_module
-		.parse "#define _autoText_label \"txt.", var_module, ".", _autoText_label, "\""
-	#else
-		.parse "#define _autoText_label \"txt.", _autoText_label, "\""
-	#endif
-	.setup_funkdata
-	.echo >> _funk_data.z80 _autoText_label, " .str \"", _autoText_string, "\"\n\n"
-#endmacro
-#define .text _funk_autoText(
-
-;============================================
 ;	> text
 ;============================================
 #macro _funk_text(_text_down, _text_right, @_text_label, _text_make)
-
 	#ifndef _text_make
 		#if SPASMVER >= 3
 			; make a label if parameter is a string
@@ -128,7 +112,7 @@
 		#define funk_printText_usage
 		pcall	funk_printText.ram, _text_label
 	#else
-		bcall	_VPutS
+		bcall	_vPutS
 	#endif
 #endmacro
 #define text _funk_text(

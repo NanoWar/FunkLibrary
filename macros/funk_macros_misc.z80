@@ -32,6 +32,17 @@
 
 
 ;============================================
+;	> direct input
+;============================================
+
+#define di.getGroup(_di_key) (_di_key >> 8)
+#define di.reset() di.group(diReset)
+#define di.group(_di_group) ld a, _di_group \ out (1), a
+#define di.read() in a, (1)
+#define di.cp(_di_key) (_di_key && $FF)
+
+
+;============================================
 ;	> relocate
 ;============================================
 
@@ -69,6 +80,7 @@
 	call	funk_fetch
 #endmacro
 #define fetch _funk_fetch(
+
 
 ;============================================
 ;	> get

@@ -1,0 +1,55 @@
+#ifndef funk_macros_module_included
+#define funk_macros_module_included
+;
+; Module macros
+; by Robert Kuhfss
+;
+
+
+;============================================
+; .module NAME
+;============================================
+#macro _funk_module( @_module_module )
+	#ifndef _module_module
+		#undef funk_module
+	#else
+		#define _module_module concat( "\"", _module_module, "\"" )
+		#define funk_module eval( _module_module )
+	#endif
+#endmacro
+#define .module _funk_module(
+#define .noModule _funk_module()
+
+
+;============================================
+; .define NAME, VALUE
+;============================================
+; Uses funk_module
+#macro _funk_define( @_define_name, _define_value )
+	#define _define_name concat( "\"", _define_name, "\"" )
+	#ifdef funk_module
+		#define _define_name funk_module, ".", _define_name
+	#endif
+	.parse "#define ", _define_name, " eval(", _define_value, ")"
+#endmacro
+#define .define _funk_define(
+
+
+;============================================
+; .text NAME, "STRING"
+;============================================
+; Adds text to funk_data
+; Uses funk_module
+#macro _funk_autoText( @_autoText_label, _autoText_string )
+	#define _autoText_label concat( "\"", _autoText_label, "\"" )
+	#ifdef funk_module
+		#define _autoText_label funk_module, ".", _autoText_label
+	#endif
+	.parse "#define _autoText_label \"txt.", _autoText_label, "\""
+	.setup_funkdata
+	.echo >> _funk_data.z80 _autoText_label, " .str \"", _autoText_string, "\"\n\n"
+#endmacro
+#define .text _funk_autoText(
+
+
+#endif ; funk_macros_module_included

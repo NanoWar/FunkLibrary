@@ -24,7 +24,7 @@
 
 
 ; .enum LABEL, [SIZE=1]
-; uses: var_module
+; uses: funk_module
 #macro _enum( @_enum_name, _enum_size )
 	#define _enum_name concat( "\"", _enum_name, "\"" )
 	#ifndef enum_location
@@ -37,8 +37,8 @@
 	#ifdef enum_module
 		#define _enum_name enum_module, ".", _enum_name
 	#endif
-	#ifdef var_module
-		#define _enum_name var_module, ".", _enum_name
+	#ifdef funk_module
+		#define _enum_name funk_module, ".", _enum_name
 	#endif
 	.parse "#define ", _enum_name, " ", enum_location
 	#define enum_location eval(enum_location + _enum_size)
@@ -53,10 +53,10 @@
 		.enum _enumEnd_name, 0
 	#else
 		#ifdef enum_module
-			#define _enumEnd_name enum_module, ".size"
+			.parse "#define _enumEnd_name ", enum_module, ".size"
 		#endif
-		#ifdef var_module
-			#define _enumEnd_name var_module, ".", _enumEnd_name
+		#ifdef funk_module
+			.parse "#define _enumEnd_name ", funk_module, ".", _enumEnd_name
 		#endif
 		.enum _enumEnd_name, 0
 	#endif

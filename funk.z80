@@ -38,9 +38,9 @@
 ;============================================
 ;	> .parse macro
 ;============================================
-#macro _parse(_parse_content1, _parse_content2, _parse_content3, _parse_content4, _parse_content5, _parse_content6, _parse_content7, _parse_content8)
+#macro _parse(_parse_1, _parse_2, _parse_3, _parse_4, _parse_5, _parse_6, _parse_7, _parse_8, _parse_9)
 	clr()
-	wr(_parse_content1, _parse_content2, _parse_content3, _parse_content4, _parse_content5, _parse_content6, _parse_content7, _parse_content8)
+	wr(_parse_1, _parse_2, _parse_3, _parse_4, _parse_5, _parse_6, _parse_7, _parse_8, _parse_9)
 	run()
 #endmacro
 #define .parse _parse(
@@ -80,12 +80,12 @@
 		#if funk_calcmodel = ti83
 			#define _start_calcname "TI83"
 			.funkinclude "header/ti83.z80"
-			#define funk_ram_start saveSScreen
+			#define funk_ramStart saveSScreen
 		#endif
 		#if funk_calcmodel = ti83p
 			#define _start_calcname "TI83+"
 			.funkinclude "header/ti83p.z80"
-			#define funk_ram_start saveSScreen
+			#define funk_ramStart saveSScreen
 		#endif
 		
 		.funkinclude "macros/funk_macros.z80"
@@ -129,7 +129,7 @@
 		#endif
 		.echo "# FunkLibrary by Robert Kuhfss"
 		.echo "# Compiling \"", funk_name, "\" (", _start_option, ") for ", _start_calcname, " ..."
-		.locate funk_ram_start
+		.varloc funk_ramStart, 768
 		#if funk_type != custom
 funk_start
 		#endif

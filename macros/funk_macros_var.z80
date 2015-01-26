@@ -6,62 +6,65 @@
 ;
 
 
-; .module NAME
-#macro _varModule( @_varModule_module )
-	#ifndef _varModule_module
-		#undef var_module
-	#else
-		#define _varModule_module concat( "\"", _varModule_module, "\"" )
-		#define var_module eval( _varModule_module )
-	#endif
-#endmacro
-#define .module _varModule(
-#define .noModule _varModule()
-
-
-; .locate POINTER
-#macro _varLocate( _varLocate_pointer )
+;============================================
+; .varloc POINTER, [SIZE]
+;============================================
+#macro _varLocate( _varLocate_pointer, _varLocate_size )
 	#define var_pointer eval( _varLocate_pointer )
 	#define var_start eval( _varLocate_pointer )
-	#define var_size_last 0
-#endmacro
-#define .locate _varLocate(
-
-
-; .var NAME, [SIZE=1]
-#macro _varAdd( @_varAdd_name, _varAdd_size )
-	#ifndef _varAdd_size
-		#define _varAdd_size 1
+	#ifdef _varLocate_size
+		#define var_size eval( _varLocate_size)
 	#endif
+	#define var_lastSize 0
+	#undef var_overflow
+#endmacro
+#define .varloc _varLocate(
+
+
+;============================================
+; .var NAME, [SIZE=1]
+;============================================
+#macro _varAdd( @_varAdd_name, _varAdd_size )
 	#ifndef var_pointer
 		#define var_pointer 0
 	#endif
-	#define _varAdd_name concat("\"", _varAdd_name, "\"")
-	#ifdef var_module
-		.parse "#define ", var_module, ".", _varAdd_name, " ", var_pointer
-	#else
-		.parse "#define ", _varAdd_name, " ", var_pointer
+	#ifndef _varAdd_size
+		#define _varAdd_size 1
 	#endif
-	;.echo var_pointer, " > ", _varAdd_name
+	#define _varAdd_name concat("\"", _varAdd_name, "\"")
+	#ifdef funk_module
+		#define _varAdd_name funk_module, ".", _varAdd_name
+	#endif
+	.parse "#define ", _varAdd_name, " ", var_pointer
+; 	.debug var_pointer, " > ", _varAdd_name
+	; Increase pointer
 	#define var_pointer eval( var_pointer + _varAdd_size )
-	#define var_size_last eval( _varAdd_size )
-	#undef _varAdd_size
+	#define var_lastSize eval( _varAdd_size )
+	; Check for overflow
+	#ifdef var_size
+		#ifndef var_overflow
+			#if var_pointer - var_start > var_size
+				.err "Var overflow at ", _varAdd_name
+				#define var_overflow
+			#endif
+		#endif
+	#endif
 #endmacro
 #define .var _varAdd(
 
 
+;============================================
 ; .free NAME, [DECREASE_FLAG]
+;============================================
 #macro _varFree( @_varFree_name, _varFree_decrease )
 	#define _varFree_name concat( "\"", _varFree_name, "\"" )
 	#ifdef _varFree_decrease
-		#ifdef var_size_last
-			#define _varFree_pointer eval( var_pointer - var_size_last )
-		#endif
+		#define _varFree_pointer eval( var_pointer - var_lastSize )
 	#else
 		#define _varFree_pointer eval( var_pointer )
 	#endif
-	#ifdef var_module
-		.parse "#define ", var_module, ".", _varFree_name, " ", _varFree_pointer
+	#ifdef funk_module
+		.parse "#define ", funk_module, ".", _varFree_name, " ", _varFree_pointer
 	#else
 		.parse "#define ", _varFree_name, " ", _varFree_pointer
 	#endif
@@ -70,7 +73,10 @@
 #define .free _varFree(
 
 
+; DEPRECATED
+;============================================
 ; .varEnd [MAX]
+;============================================
 #macro _varEnd( _varEnd_size )
 	#ifdef _varEnd_size
 		#define _var_used eval( var_pointer - var_start )
@@ -83,18 +89,6 @@
 	#undef var_pointer
 #endmacro
 #define .varEnd _varEnd(
-
-
-; .define NAME, VALUE
-; uses: var_module
-#macro _define( @_define_name, _define_value )
-	#define _define_name concat( "\"", _define_name, "\"" )
-	#ifdef var_module
-		#define _define_name var_module, ".", _define_name
-	#endif
-	.parse "#define ", _define_name, " eval(", _define_value, ")"
-#endmacro
-#define .define _define(
 
 
 #endif ; funk_macros_var_included
